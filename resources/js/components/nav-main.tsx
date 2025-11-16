@@ -92,6 +92,7 @@ export function NavMain({ items = [] }: { items: NavItem[] | Menu[] }) {
                         '/dashboard',
                         '/mentor/dashboard',
                         '/mentor/kelas',
+                        '/mentor/diskusi',
                     ];
                     if (
                         allowedLinks.some((href) => item.href.startsWith(href))

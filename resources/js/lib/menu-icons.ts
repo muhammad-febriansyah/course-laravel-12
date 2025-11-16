@@ -5,14 +5,18 @@ import {
     FileQuestion,
     FileText,
     Gift,
+    GraduationCap,
     HelpCircle,
+    Home,
     LayoutDashboard,
+    Library,
     LibraryBig,
     List,
     Megaphone,
     MessageCircleQuestion,
     PlayCircle,
     Receipt,
+    ReceiptText,
     School,
     Settings,
     SettingsIcon,
@@ -21,12 +25,14 @@ import {
     Target,
     Tag,
     TrendingUp,
+    UserCircle,
     Users,
     type LucideIcon,
 } from 'lucide-react';
 
 const menuIconMap: Record<string, LucideIcon> = {
     dashboard: LayoutDashboard,
+    'layout-dashboard': LayoutDashboard,
     people: Users,
     school: School,
     library_books: LibraryBig,
@@ -43,6 +49,7 @@ const menuIconMap: Record<string, LucideIcon> = {
     local_offer: BadgePercent,
     card_giftcard: Gift,
     help_outline: MessageCircleQuestion,
+    'message-circle-question': MessageCircleQuestion,
     receipt: Receipt,
     description: FileText,
     file_text: FileText,
@@ -53,6 +60,13 @@ const menuIconMap: Record<string, LucideIcon> = {
     settings_applications: SettingsIcon,
     appearance: SettingsIcon,
     two_factor: Shield,
+    // Student dashboard icons
+    home: Home,
+    'book-open': BookOpen,
+    'graduation-cap': GraduationCap,
+    library: Library,
+    'receipt-text': ReceiptText,
+    'user-circle': UserCircle,
 };
 
 export const resolveMenuIcon = (icon?: string): LucideIcon => {

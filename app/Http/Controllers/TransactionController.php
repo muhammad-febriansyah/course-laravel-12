@@ -6,6 +6,7 @@ use App\Application\Enrollments\Services\EnrollmentService;
 use App\Models\Transaction;
 use App\Services\TripayService;
 use App\Services\WhatsAppNotificationService;
+use App\Notifications\PaymentPaidNotification;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -61,6 +62,12 @@ class TransactionController extends Controller
 
         $this->autoEnrollIfEligible($transaction);
         $this->whatsappNotificationService->sendClassPurchaseNotification($transaction);
+
+        // Notify user via email about successful payment
+        $transaction->loadMissing(['user', 'kelas']);
+        if ($transaction->user) {
+            $transaction->user->notify(new PaymentPaidNotification($transaction));
+        }
 
         return back()->with('success', 'Transaksi berhasil di-approve!');
     }
@@ -122,6 +129,12 @@ class TransactionController extends Controller
         if ($data['status'] === 'PAID' && !$wasPaid) {
             $this->autoEnrollIfEligible($transaction);
             $this->whatsappNotificationService->sendClassPurchaseNotification($transaction);
+
+             // Notify user via email about successful payment
+             $transaction->loadMissing(['user', 'kelas']);
+             if ($transaction->user) {
+                 $transaction->user->notify(new PaymentPaidNotification($transaction));
+             }
         }
 
         return response()->json(['success' => true]);

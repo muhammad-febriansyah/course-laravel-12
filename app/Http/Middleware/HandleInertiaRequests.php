@@ -254,48 +254,25 @@ class HandleInertiaRequests extends Middleware
                 'courses' => ['kelas'],
             ];
 
-            return $menus
-                ->filter(fn (Menu $menu) => in_array($menu->name, $allowedTop, true))
-                ->map(function (Menu $menu) use ($allowedChildren) {
-                    if ($menu->name === 'dashboard') {
-                        $menu->url = '/mentor/dashboard';
+            $mentorMenus = collect([
+                [
+                    'title' => 'Dashboard',
+                    'href' => '/mentor/dashboard',
+                    'icon' => 'dashboard',
+                ],
+                [
+                    'title' => 'Kelas',
+                    'href' => '/mentor/kelas',
+                    'icon' => 'class',
+                ],
+                [
+                    'title' => 'Diskusi',
+                    'href' => '/mentor/diskusi',
+                    'icon' => 'message-circle-question',
+                ],
+            ]);
 
-                        if ($menu->relationLoaded('children')) {
-                            $menu->setRelation('children', collect());
-                        }
-
-                        return $menu;
-                    }
-
-                    if ($menu->relationLoaded('children')) {
-                        $children = $menu->children
-                            ->filter(fn (Menu $child) => in_array($child->name, $allowedChildren[$menu->name] ?? [], true))
-                            ->map(function (Menu $child) {
-                                if ($child->name === 'kelas') {
-                                    $child->url = '/mentor/kelas';
-                                }
-
-                                return $child;
-                            })
-                            ->values();
-
-                        $menu->setRelation('children', $children);
-                    }
-
-                    return $menu;
-                })
-                ->filter(function (Menu $menu) {
-                    if ($menu->url) {
-                        return true;
-                    }
-
-                    if ($menu->relationLoaded('children')) {
-                        return $menu->children->isNotEmpty();
-                    }
-
-                    return false;
-                })
-                ->values();
+            return $mentorMenus;
         }
 
         if (! $role || $role === 'user') {
@@ -303,17 +280,17 @@ class HandleInertiaRequests extends Middleware
                 [
                     'title' => 'Dashboard',
                     'href' => '/dashboard',
-                    'icon' => 'home',
+                    'icon' => 'layout-dashboard',
                 ],
                 [
                     'title' => 'Belajar',
                     'href' => '/dashboard/learn',
-                    'icon' => 'graduation-cap',
+                    'icon' => 'book-open',
                 ],
                 [
                     'title' => 'Kelas Saya',
                     'href' => '/dashboard/purchases',
-                    'icon' => 'book',
+                    'icon' => 'library',
                 ],
                 [
                     'title' => 'Sertifikat',
@@ -323,12 +300,12 @@ class HandleInertiaRequests extends Middleware
                 [
                     'title' => 'Histori Transaksi',
                     'href' => '/dashboard/transactions',
-                    'icon' => 'receipt',
+                    'icon' => 'receipt-text',
                 ],
                 [
                     'title' => 'Profil',
                     'href' => '/dashboard/profile',
-                    'icon' => 'user',
+                    'icon' => 'user-circle',
                 ],
             ]);
         }

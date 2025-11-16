@@ -702,19 +702,21 @@ function CourseDetailSections({
                 className="rounded-3xl border border-slate-200/60 bg-white/80 p-6 shadow-sm backdrop-blur-sm sm:p-8"
             >
                 <Tabs defaultValue="curriculum" className="flex flex-col gap-16">
-                    <TabsList className="mb-10 grid w-full gap-7 rounded-3xl bg-transparent sm:grid-cols-2 lg:grid-cols-4">
+                    <TabsList className="mb-4 grid w-full grid-cols-2 gap-3 rounded-3xl bg-transparent sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         {tabItems.map(({ value, label, helper, icon: Icon }) => (
                             <TabsTrigger
                                 key={value}
                                 value={value}
-                                className="group relative flex w-full min-w-0 flex-1 items-start gap-4 rounded-2xl border border-transparent bg-white px-7 py-5 text-left text-sm font-medium text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60 hover:text-slate-900 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2547F9]/30 data-[state=active]:border-[#2547F9] data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#2547F9]/10 data-[state=active]:to-[#1e3fd4]/10 data-[state=active]:text-slate-900 data-[state=active]:shadow-lg"
+                                className="group relative flex w-full min-w-0 flex-1 items-start gap-3 rounded-2xl border border-transparent bg-white px-3 py-4 text-left text-xs font-medium text-slate-600 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50/60 hover:text-slate-900 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2547F9]/30 sm:gap-4 sm:px-6 sm:py-5 sm:text-sm data-[state=active]:border-[#2547F9] data-[state=active]:bg-gradient-to-br data-[state=active]:from-[#2547F9]/10 data-[state=active]:to-[#1e3fd4]/10 data-[state=active]:text-slate-900 data-[state=active]:shadow-lg"
                             >
-                                <span className="flex size-11 items-center justify-center rounded-xl bg-blue-50 text-[#2547F9] transition group-data-[state=active]:bg-[#2547F9] group-data-[state=active]:text-white">
-                                    <Icon className="h-[18px] w-[18px]" />
+                                <span className="flex size-9 items-center justify-center rounded-xl bg-blue-50 text-[#2547F9] transition group-data-[state=active]:bg-[#2547F9] group-data-[state=active]:text-white sm:size-11">
+                                    <Icon className="h-[16px] w-[16px] sm:h-[18px] sm:w-[18px]" />
                                 </span>
                                 <span className="flex min-w-0 flex-col">
-                                    <span className="truncate text-sm font-semibold">{label}</span>
-                                    <span className="truncate text-xs text-slate-400 transition group-data-[state=active]:text-slate-600">
+                                    <span className="truncate text-xs font-semibold sm:text-sm">
+                                        {label}
+                                    </span>
+                                    <span className="truncate text-[11px] text-slate-400 transition group-data-[state=active]:text-slate-600 sm:text-xs">
                                         {helper}
                                     </span>
                                 </span>
@@ -722,7 +724,9 @@ function CourseDetailSections({
                         ))}
                     </TabsList>
 
-                    <TabsContent value="curriculum" className="mt-4">
+                    <div className="mt-10 sm:mt-20" />
+
+                    <TabsContent value="curriculum" className="mt-0">
                         {sections.length ? (
                             <div className="space-y-4">
                                 {shouldLimitPreview ? (

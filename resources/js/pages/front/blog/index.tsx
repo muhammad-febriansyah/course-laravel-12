@@ -434,10 +434,10 @@ export default function BlogIndex({
                                     )}
                                     <Link
                                         href={buildPostHref(featuredPost.slug)}
-                                        className="mt-10 inline-flex items-center gap-2 rounded-full bg-white/15 px-5 py-2 text-sm font-semibold text-blue-100 transition hover:bg-white/25 hover:text-white"
+                                        className="mt-8 inline-flex w-auto items-center gap-2 self-start rounded-full bg-white/15 px-4 py-2 text-xs font-semibold text-blue-100 transition hover:bg-white/25 hover:text-white sm:text-sm"
                                     >
                                         Baca selengkapnya
-                                        <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-1" />
+                                        <ArrowUpRight className="h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-1" />
                                     </Link>
                                 </div>
                             </article>

@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { ColumnDef } from '@tanstack/react-table';
@@ -68,6 +68,19 @@ export default function CertificatesIndex({ templates }: Props) {
     const [deleteOpen, setDeleteOpen] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState<CertificateTemplate | null>(null);
     const [generatingPreview, setGeneratingPreview] = useState(false);
+
+    const page = usePage();
+    const flash = (page.props as { flash?: { success?: string; error?: string } }).flash;
+
+    useEffect(() => {
+        if (flash?.success) {
+            toast.success(flash.success);
+        }
+
+        if (flash?.error) {
+            toast.error(flash.error);
+        }
+    }, [flash]);
 
     const openDeleteDialog = (template: CertificateTemplate) => {
         setSelectedTemplate(template);

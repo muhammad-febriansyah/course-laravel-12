@@ -8,6 +8,7 @@ use App\Models\Kelas;
 use App\Models\QuizAttempt;
 use App\Models\VideoProgress;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -47,7 +48,19 @@ class CertificateController extends Controller
                 ->exists();
 
             // Course is complete if all videos watched AND at least 1 quiz attempt
-            return $completedVideos >= $totalVideos && $hasQuizAttempts;
+            $isCompleted = $completedVideos >= $totalVideos && $hasQuizAttempts;
+
+            // Generate certificate code if course is completed and doesn't have one yet
+            if ($isCompleted && !$enrollment->certificate_code) {
+                $enrollment->update([
+                    'certificate_code' => $this->generateCertificateCode(),
+                    'certificate_issued_at' => now(),
+                    'completed_at' => $enrollment->completed_at ?? now(),
+                ]);
+                $enrollment->refresh();
+            }
+
+            return $isCompleted;
         })->map(function ($enrollment) use ($user) {
             $kelas = $enrollment->kelas;
 
@@ -66,6 +79,8 @@ class CertificateController extends Controller
                     'name' => $kelas->user->name,
                 ],
                 'completed_at' => $enrollment->updated_at->format('d M Y'),
+                'certificate_code' => $enrollment->certificate_code,
+                'certificate_issued_at' => $enrollment->certificate_issued_at ? $enrollment->certificate_issued_at->format('d M Y') : null,
                 'quiz_score' => $bestQuizAttempt ? $bestQuizAttempt->score : 0,
                 'quiz_total' => $bestQuizAttempt ? $bestQuizAttempt->total_questions * 10 : 0, // Assuming 10 points per question
             ];
@@ -123,8 +138,24 @@ class CertificateController extends Controller
             'message' => 'Certificate download feature coming soon!',
             'course' => $kelas->title,
             'user' => $user->name,
+            'certificate_code' => $enrollment->certificate_code,
             'score' => $bestQuizAttempt->score,
             'completed_at' => $enrollment->updated_at->format('d F Y'),
         ]);
+    }
+
+    /**
+     * Generate unique certificate code
+     */
+    private function generateCertificateCode(): string
+    {
+        do {
+            // Format: SKILLUP-YYYY-XXXX (e.g., SKILLUP-2024-A1B2)
+            $year = date('Y');
+            $random = strtoupper(Str::random(4));
+            $code = "SKILLUP-{$year}-{$random}";
+        } while (Enrollment::where('certificate_code', $code)->exists());
+
+        return $code;
     }
 }

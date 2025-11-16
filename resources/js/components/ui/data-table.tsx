@@ -138,12 +138,12 @@ export function DataTable<TData, TValue>({
                     </TableBody>
                 </Table>
             </div>
-            <div className="flex items-center justify-between px-2">
-                <div className="flex-1 text-sm text-muted-foreground">
+            <div className="flex flex-col gap-3 px-2">
+                <div className="text-sm text-muted-foreground text-center md:text-left">
                     {table.getFilteredRowModel().rows.length} data ditemukan
                 </div>
-                <div className="flex items-center space-x-6 lg:space-x-8">
-                    <div className="flex items-center space-x-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center justify-center gap-2 sm:justify-start">
                         <p className="text-sm font-medium">Baris per halaman</p>
                         <select
                             value={table.getState().pagination.pageSize}
@@ -159,29 +159,31 @@ export function DataTable<TData, TValue>({
                             ))}
                         </select>
                     </div>
-                    <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-                        Halaman {table.getState().pagination.pageIndex + 1} dari{' '}
-                        {table.getPageCount()}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Button
-                            variant="outline"
-                            className="h-9 w-9 p-0"
-                            onClick={() => table.previousPage()}
-                            disabled={!table.getCanPreviousPage()}
-                        >
-                            <span className="sr-only">Halaman sebelumnya</span>
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="h-9 w-9 p-0"
-                            onClick={() => table.nextPage()}
-                            disabled={!table.getCanNextPage()}
-                        >
-                            <span className="sr-only">Halaman selanjutnya</span>
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
+                    <div className="flex flex-col items-center justify-center gap-2 sm:flex-row sm:justify-end">
+                        <div className="text-sm font-medium">
+                            Halaman {table.getState().pagination.pageIndex + 1} dari{' '}
+                            {table.getPageCount()}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                className="h-9 w-9 p-0"
+                                onClick={() => table.previousPage()}
+                                disabled={!table.getCanPreviousPage()}
+                            >
+                                <span className="sr-only">Halaman sebelumnya</span>
+                                <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="h-9 w-9 p-0"
+                                onClick={() => table.nextPage()}
+                                disabled={!table.getCanNextPage()}
+                            >
+                                <span className="sr-only">Halaman selanjutnya</span>
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>

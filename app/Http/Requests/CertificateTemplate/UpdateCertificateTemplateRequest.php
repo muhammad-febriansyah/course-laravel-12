@@ -15,7 +15,8 @@ class UpdateCertificateTemplateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            // Allow partial updates: only validate name when it is present
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:500'],
             'background_image' => ['nullable', 'file', 'mimes:jpeg,png,jpg,webp,pdf', 'max:8192'],
             'is_active' => ['nullable', 'boolean'],

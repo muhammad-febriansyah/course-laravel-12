@@ -9,8 +9,19 @@ use Illuminate\Support\Facades\Log;
 class WhatsAppNotificationService
 {
     protected ?string $siteName = null;
+
+    protected function isEnabled(): bool
+    {
+        // Central flag to enable/disable WhatsApp gateway
+        return (bool) env('APP_WA_ENABLED', false);
+    }
+
     public function sendClassPurchaseNotification(Transaction $transaction): void
     {
+        if (! $this->isEnabled()) {
+            Log::info('WhatsApp purchase notification skipped: gateway disabled');
+            return;
+        }
         $transaction->loadMissing(['user', 'kelas']);
 
         $user = $transaction->user;
@@ -83,7 +94,7 @@ class WhatsAppNotificationService
         $lines[] = $courseUrl;
         $lines[] = '';
         $lines[] = 'Selamat belajar dan semoga sukses!';
-        $lines[] = "_Tim {$appName}_";
+        $lines[] = "Tim {$appName}";
 
         return implode("\n", $lines);
     }

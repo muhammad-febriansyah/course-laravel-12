@@ -37,6 +37,7 @@ Route::get('/syarat-ketentuan', [HomeController::class, 'syaratKetentuan'])->nam
 Route::get('/kebijakan-privasi', [HomeController::class, 'kebijakanPrivasi'])->name('home.privacy');
 Route::get('/faq', [HomeController::class, 'faq'])->name('home.faq');
 Route::get('/cek-sertifikat', [HomeController::class, 'cekSertifikat'])->name('home.certificates');
+Route::post('/api/certificates/verify', [\App\Http\Controllers\Api\CertificateVerificationController::class, 'verify'])->name('api.certificates.verify');
 Route::get('/kelas', [HomeController::class, 'kelas'])->name('home.kelas');
 Route::get('/contact-us', [HomeController::class, 'contactUs'])->name('home.contact');
 Route::get('/courses', [CourseCatalogController::class, 'index'])->name('courses.catalog');
@@ -142,13 +143,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('kelas', MentorKelasController::class)
             ->parameters(['kelas' => 'kelas']);
 
+        // All Discussions - Global view for mentor
+        Route::get('diskusi', [\App\Http\Controllers\Mentor\DiscussionController::class, 'indexAll'])
+            ->name('diskusi.index');
+        Route::get('diskusi/{discussion}', [\App\Http\Controllers\Mentor\DiscussionController::class, 'showGlobal'])
+            ->name('diskusi.show');
+        Route::post('diskusi/{discussion}/reply', [\App\Http\Controllers\Mentor\DiscussionController::class, 'reply'])
+            ->name('diskusi.reply');
+
         // Student Management
         Route::get('kelas/{kela}/students', [\App\Http\Controllers\Mentor\StudentController::class, 'index'])
             ->name('kelas.students.index');
         Route::get('kelas/{kela}/students/{enrollment}', [\App\Http\Controllers\Mentor\StudentController::class, 'show'])
             ->name('kelas.students.show');
 
-        // Discussions/Q&A
+        // Discussions/Q&A per kelas
         Route::get('kelas/{kela}/discussions', [\App\Http\Controllers\Mentor\DiscussionController::class, 'index'])
             ->name('kelas.discussions.index');
         Route::get('kelas/{kela}/discussions/{discussion}', [\App\Http\Controllers\Mentor\DiscussionController::class, 'show'])

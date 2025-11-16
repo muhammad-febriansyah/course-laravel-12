@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -70,14 +71,19 @@ interface Level {
     name: string;
 }
 
+interface Benefit {
+    id: number;
+    name: string;
+}
+
 interface Props {
     categories: Category[];
     types: Type[];
     levels: Level[];
+    benefits: Benefit[];
     basePath?: string;
 }
 
-// Zod schema for validation dengan pesan error bahasa Indonesia
 const kelasSchema = z.object({
     title: z
         .string({ message: 'Judul harus diisi' })
@@ -95,7 +101,7 @@ const kelasSchema = z.object({
         .string({ message: 'Harga harus diisi' })
         .min(1, 'Harga harus diisi'),
     discount: z.string().optional().or(z.literal('')),
-    benefit: z.string().optional().or(z.literal('')),
+    benefits: z.array(z.number()).optional(),
     desc: z.string().optional().or(z.literal('')),
     body: z.string().optional().or(z.literal('')),
     image: z.any().optional(),
@@ -129,13 +135,20 @@ const kelasSchema = z.object({
                 question: z
                     .string({ message: 'Pertanyaan harus diisi' })
                     .min(1, 'Pertanyaan harus diisi'),
-                answer: z
-                    .string({ message: 'Jawaban harus diisi' })
-                    .min(1, 'Jawaban harus diisi'),
                 image: z.any().optional(),
-                point: z
-                    .string({ message: 'Poin harus diisi' })
-                    .min(1, 'Poin harus diisi'),
+                answers: z
+                    .array(
+                        z.object({
+                            answer: z
+                                .string({ message: 'Jawaban harus diisi' })
+                                .min(1, 'Jawaban harus diisi'),
+                            point: z
+                                .string({ message: 'Poin harus diisi' })
+                                .min(1, 'Poin harus diisi'),
+                        }),
+                    )
+                    .min(4, 'Minimal 4 jawaban diperlukan')
+                    .optional(),
             }),
         )
         .optional(),
@@ -143,7 +156,13 @@ const kelasSchema = z.object({
 
 type KelasFormData = z.infer<typeof kelasSchema>;
 
-export default function Create({ categories, types, levels, basePath = '/mentor/kelas' }: Props) {
+export default function Create({
+    categories,
+    types,
+    levels,
+    benefits,
+    basePath = '/mentor/kelas',
+}: Props) {
     const breadcrumbs = getBreadcrumbs(basePath);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [quizImagePreviews, setQuizImagePreviews] = useState<{
@@ -280,7 +299,11 @@ export default function Create({ categories, types, levels, basePath = '/mentor/
         formData.append('level_id', data.level_id);
         formData.append('price', data.price);
         if (data.discount) formData.append('discount', data.discount);
-        if (data.benefit) formData.append('benefit', data.benefit);
+        if (data.benefits && data.benefits.length > 0) {
+            data.benefits.forEach((benefitId, index) => {
+                formData.append(`benefits[${index}]`, String(benefitId));
+            });
+        }
         if (data.desc) formData.append('desc', data.desc);
         if (data.body) formData.append('body', data.body);
         formData.append('status', data.status);
@@ -314,8 +337,20 @@ export default function Create({ categories, types, levels, basePath = '/mentor/
         if (data.quizzes && data.quizzes.length > 0) {
             data.quizzes.forEach((quiz, qIndex) => {
                 formData.append(`quizzes[${qIndex}][question]`, quiz.question);
-                formData.append(`quizzes[${qIndex}][answer]`, quiz.answer);
-                formData.append(`quizzes[${qIndex}][point]`, quiz.point);
+
+                // Quiz answers
+                if (quiz.answers && quiz.answers.length > 0) {
+                    quiz.answers.forEach((ans, ansIndex) => {
+                        formData.append(
+                            `quizzes[${qIndex}][answers][${ansIndex}][answer]`,
+                            ans.answer,
+                        );
+                        formData.append(
+                            `quizzes[${qIndex}][answers][${ansIndex}][point]`,
+                            ans.point,
+                        );
+                    });
+                }
 
                 if (quiz.image && quiz.image[0]) {
                     formData.append(`quizzes[${qIndex}][image]`, quiz.image[0]);
@@ -323,16 +358,30 @@ export default function Create({ categories, types, levels, basePath = '/mentor/
             });
         }
 
-        router.post(basePath, formData, {
-            forceFormData: true,
-            onSuccess: () => {
-                toast.success('Kelas berhasil dibuat!');
-            },
-            onError: (errors) => {
-                console.error(errors);
-                toast.error('Gagal membuat kelas. Periksa form Anda.');
-            },
-        });
+        toast.promise(
+            new Promise((resolve, reject) => {
+                router.post(basePath, formData, {
+                    forceFormData: true,
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        resolve('success');
+                    },
+                    onError: (errors) => {
+                        console.error('Create errors:', errors);
+                        const firstError = Object.values(errors)[0];
+                        const errorMessage = Array.isArray(firstError)
+                            ? firstError[0]
+                            : firstError || 'Terjadi kesalahan saat membuat kelas';
+                        reject(new Error(errorMessage));
+                    },
+                });
+            }),
+            {
+                loading: 'Menyimpan kelas...',
+                success: 'Kelas berhasil dibuat dan disimpan.',
+                error: (err) => err.message || 'Gagal membuat kelas',
+            }
+        );
     };
 
     return (
@@ -349,7 +398,25 @@ export default function Create({ categories, types, levels, basePath = '/mentor/
                     />
                 </Card>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                    onSubmit={handleSubmit(
+                        onSubmit,
+                        (errors) => {
+                            console.log('Form validation failed:', errors);
+
+                            // Find first error
+                            const firstErrorField = Object.keys(errors)[0];
+                            const firstError = firstErrorField ? (errors as any)[firstErrorField] : null;
+                            const errorMessage = firstError?.message || 'Mohon lengkapi semua field yang wajib diisi';
+
+                            toast.error('Validasi Gagal!', {
+                                description: errorMessage,
+                                duration: 5000,
+                            });
+                        }
+                    )}
+                    className="space-y-6"
+                >
                     {/* Step 1: Informasi Dasar */}
                     {currentStep === 1 && (
                         <Card>
@@ -649,13 +716,39 @@ export default function Create({ categories, types, levels, basePath = '/mentor/
                                         )}
                                     </div>
 
-                                    <div className="col-span-2 space-y-2">
-                                        <Label htmlFor="benefit">Benefit</Label>
-                                        <Textarea
-                                            id="benefit"
-                                            {...register('benefit')}
-                                            placeholder="Masukkan benefit kelas"
-                                            rows={3}
+                                    <div className="col-span-2 space-y-3">
+                                        <Label>Benefits Kelas</Label>
+                                        <Controller
+                                            name="benefits"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <div className="space-y-2 rounded-lg border p-4">
+                                                    {benefits.map((benefit) => (
+                                                        <div key={benefit.id} className="flex items-center space-x-2">
+                                                            <Checkbox
+                                                                id={`benefit-${benefit.id}`}
+                                                                checked={field.value?.includes(benefit.id)}
+                                                                onCheckedChange={(checked) => {
+                                                                    const currentValues = field.value || [];
+                                                                    if (checked) {
+                                                                        field.onChange([...currentValues, benefit.id]);
+                                                                    } else {
+                                                                        field.onChange(
+                                                                            currentValues.filter((id) => id !== benefit.id)
+                                                                        );
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <label
+                                                                htmlFor={`benefit-${benefit.id}`}
+                                                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                                            >
+                                                                {benefit.name}
+                                                            </label>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
                                         />
                                     </div>
 
@@ -754,8 +847,12 @@ export default function Create({ categories, types, levels, basePath = '/mentor/
                                     onClick={() =>
                                         appendQuiz({
                                             question: '',
-                                            answer: '',
-                                            point: '10',
+                                            answers: [
+                                                { answer: '', point: '0' },
+                                                { answer: '', point: '0' },
+                                                { answer: '', point: '0' },
+                                                { answer: '', point: '0' },
+                                            ],
                                         })
                                     }
                                 >
@@ -771,171 +868,21 @@ export default function Create({ categories, types, levels, basePath = '/mentor/
                                     </p>
                                 ) : (
                                     quizFields.map((quiz, qIndex) => (
-                                        <div
+                                        <QuizItem
                                             key={quiz.id}
-                                            className="space-y-4 rounded-lg border p-4"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <h4 className="font-medium">
-                                                    Kuis #{qIndex + 1}
-                                                </h4>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        removeQuiz(qIndex)
-                                                    }
-                                                >
-                                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                                </Button>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="col-span-2 space-y-2">
-                                                    <Label>Pertanyaan</Label>
-                                                    <Textarea
-                                                        {...register(
-                                                            `quizzes.${qIndex}.question`,
-                                                        )}
-                                                        placeholder="Masukkan pertanyaan"
-                                                        rows={3}
-                                                    />
-                                                    {errors.quizzes?.[qIndex]
-                                                        ?.question && (
-                                                        <p className="text-sm text-destructive">
-                                                            {
-                                                                errors.quizzes[
-                                                                    qIndex
-                                                                ].question
-                                                                    .message
-                                                            }
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <div className="col-span-2 space-y-2">
-                                                    <Label>Jawaban</Label>
-                                                    <Textarea
-                                                        {...register(
-                                                            `quizzes.${qIndex}.answer`,
-                                                        )}
-                                                        placeholder="Masukkan jawaban (pisahkan opsi dengan koma untuk multiple choice)"
-                                                        rows={2}
-                                                    />
-                                                    {errors.quizzes?.[qIndex]
-                                                        ?.answer && (
-                                                        <p className="text-sm text-destructive">
-                                                            {
-                                                                errors.quizzes[
-                                                                    qIndex
-                                                                ].answer.message
-                                                            }
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label>Poin</Label>
-                                                    <Input
-                                                        type="number"
-                                                        {...register(
-                                                            `quizzes.${qIndex}.point`,
-                                                        )}
-                                                        placeholder="10"
-                                                    />
-                                                    {errors.quizzes?.[qIndex]
-                                                        ?.point && (
-                                                        <p className="text-sm text-destructive">
-                                                            {
-                                                                errors.quizzes[
-                                                                    qIndex
-                                                                ].point.message
-                                                            }
-                                                        </p>
-                                                    )}
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <Label>
-                                                        Gambar (Opsional)
-                                                    </Label>
-                                                    {quizImagePreviews[
-                                                        qIndex
-                                                    ] ? (
-                                                        <div className="relative">
-                                                            <img
-                                                                src={
-                                                                    quizImagePreviews[
-                                                                        qIndex
-                                                                    ]
-                                                                }
-                                                                alt="Preview"
-                                                                className="h-32 w-full rounded-lg border object-cover"
-                                                            />
-                                                            <Button
-                                                                type="button"
-                                                                variant="destructive"
-                                                                size="icon"
-                                                                className="absolute top-2 right-2 h-8 w-8"
-                                                                onClick={() =>
-                                                                    removeQuizImage(
-                                                                        qIndex,
-                                                                    )
-                                                                }
-                                                            >
-                                                                <X className="h-3 w-3" />
-                                                            </Button>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-4 text-center transition-colors hover:border-muted-foreground/50">
-                                                            <div className="flex flex-col items-center gap-2">
-                                                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                                                                <p className="text-xs text-muted-foreground">
-                                                                    PNG, JPG,
-                                                                    JPEG hingga
-                                                                    2MB
-                                                                </p>
-                                                                <Input
-                                                                    id={`quiz-image-${qIndex}`}
-                                                                    type="file"
-                                                                    accept="image/*"
-                                                                    className="hidden"
-                                                                    {...register(
-                                                                        `quizzes.${qIndex}.image`,
-                                                                        {
-                                                                            onChange:
-                                                                                (
-                                                                                    e,
-                                                                                ) =>
-                                                                                    handleQuizImageChange(
-                                                                                        e,
-                                                                                        qIndex,
-                                                                                    ),
-                                                                        },
-                                                                    )}
-                                                                />
-                                                                <Button
-                                                                    type="button"
-                                                                    variant="outline"
-                                                                    size="sm"
-                                                                    onClick={() =>
-                                                                        document
-                                                                            .getElementById(
-                                                                                `quiz-image-${qIndex}`,
-                                                                            )
-                                                                            ?.click()
-                                                                    }
-                                                                >
-                                                                    <Upload className="mr-2 h-3 w-3" />
-                                                                    Pilih Gambar
-                                                                </Button>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
+                                            qIndex={qIndex}
+                                            register={register}
+                                            control={control}
+                                            errors={errors}
+                                            removeQuiz={removeQuiz}
+                                            quizImagePreviews={
+                                                quizImagePreviews
+                                            }
+                                            handleQuizImageChange={
+                                                handleQuizImageChange
+                                            }
+                                            removeQuizImage={removeQuizImage}
+                                        />
                                     ))
                                 )}
                             </CardContent>
@@ -1023,17 +970,16 @@ function SectionItem({
                         <GripVertical className="h-4 w-4 text-muted-foreground" />
                         <span>Section #{sIndex + 1}</span>
                     </div>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
+                    <span
+                        role="button"
+                        className="inline-flex h-9 items-center justify-center rounded-md px-3 text-sm hover:bg-accent hover:text-accent-foreground"
                         onClick={(e) => {
                             e.stopPropagation();
                             removeSection(sIndex);
                         }}
                     >
                         <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    </span>
                 </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-4 pt-4">
@@ -1151,5 +1097,230 @@ function SectionItem({
                 </div>
             </AccordionContent>
         </AccordionItem>
+    );
+}
+
+// Separate component for Quiz Item
+interface QuizItemProps {
+    qIndex: number;
+    register: UseFormRegister<KelasFormData>;
+    control: Control<KelasFormData>;
+    errors: FieldErrors<KelasFormData>;
+    removeQuiz: (index: number) => void;
+    quizImagePreviews: { [key: number]: string };
+    handleQuizImageChange: (
+        e: React.ChangeEvent<HTMLInputElement>,
+        index: number,
+    ) => void;
+    removeQuizImage: (index: number) => void;
+}
+
+function QuizItem({
+    qIndex,
+    register,
+    control,
+    errors,
+    removeQuiz,
+    quizImagePreviews,
+    handleQuizImageChange,
+    removeQuizImage,
+}: QuizItemProps) {
+    return (
+        <div className="space-y-4 rounded-lg border p-4">
+            <div className="flex items-center justify-between">
+                <h4 className="font-medium">Kuis #{qIndex + 1}</h4>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeQuiz(qIndex)}
+                >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-2">
+                    <Label>Pertanyaan</Label>
+                    <Textarea
+                        {...register(`quizzes.${qIndex}.question`)}
+                        placeholder="Masukkan pertanyaan"
+                        rows={3}
+                    />
+                    {errors.quizzes?.[qIndex]?.question && (
+                        <p className="text-sm text-destructive">
+                            {errors.quizzes[qIndex].question.message}
+                        </p>
+                    )}
+                </div>
+
+                <div className="col-span-2 space-y-2">
+                    <Label>Gambar (Opsional)</Label>
+                    {quizImagePreviews[qIndex] ? (
+                        <div className="relative">
+                            <img
+                                src={quizImagePreviews[qIndex]}
+                                alt="Preview"
+                                className="h-32 w-full rounded-lg border object-cover"
+                            />
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2 h-8 w-8"
+                                onClick={() => removeQuizImage(qIndex)}
+                            >
+                                <X className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-4 text-center transition-colors hover:border-muted-foreground/50">
+                            <div className="flex flex-col items-center gap-2">
+                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                <p className="text-xs text-muted-foreground">
+                                    PNG, JPG, JPEG hingga 2MB
+                                </p>
+                                <Input
+                                    id={`quiz-image-${qIndex}`}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    {...register(`quizzes.${qIndex}.image`, {
+                                        onChange: (e) =>
+                                            handleQuizImageChange(e, qIndex),
+                                    })}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        document
+                                            .getElementById(
+                                                `quiz-image-${qIndex}`,
+                                            )
+                                            ?.click()
+                                    }
+                                >
+                                    <Upload className="mr-2 h-3 w-3" />
+                                    Pilih Gambar
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <QuizAnswers
+                    qIndex={qIndex}
+                    control={control}
+                    register={register}
+                    errors={errors}
+                />
+            </div>
+        </div>
+    );
+}
+
+// Component for Quiz Answers
+interface QuizAnswersProps {
+    qIndex: number;
+    control: Control<KelasFormData>;
+    register: UseFormRegister<KelasFormData>;
+    errors: FieldErrors<KelasFormData>;
+}
+
+function QuizAnswers({ qIndex, control, register, errors }: QuizAnswersProps) {
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: `quizzes.${qIndex}.answers`,
+    });
+
+    return (
+        <div className="col-span-2 space-y-3">
+            <div className="flex items-center justify-between">
+                <Label>Opsi Jawaban</Label>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ answer: '', point: '0' })}
+                >
+                    <Plus className="mr-2 h-3 w-3" />
+                    Tambah Jawaban
+                </Button>
+            </div>
+
+            <div className="space-y-3">
+                {fields.map((field, ansIndex) => (
+                    <div
+                        key={field.id}
+                        className="grid grid-cols-12 items-start gap-2"
+                    >
+                        <div className="col-span-8 space-y-1">
+                            <Input
+                                {...register(
+                                    `quizzes.${qIndex}.answers.${ansIndex}.answer`,
+                                )}
+                                placeholder={`Jawaban ${ansIndex + 1}`}
+                            />
+                            {errors.quizzes?.[qIndex]?.answers?.[ansIndex]
+                                ?.answer && (
+                                <p className="text-xs text-destructive">
+                                    {
+                                        errors.quizzes[qIndex].answers![
+                                            ansIndex
+                                        ]!.answer!.message
+                                    }
+                                </p>
+                            )}
+                        </div>
+                        <div className="col-span-3 space-y-1">
+                            <Input
+                                type="number"
+                                {...register(
+                                    `quizzes.${qIndex}.answers.${ansIndex}.point`,
+                                )}
+                                placeholder="Poin"
+                            />
+                            {errors.quizzes?.[qIndex]?.answers?.[ansIndex]
+                                ?.point && (
+                                <p className="text-xs text-destructive">
+                                    {
+                                        errors.quizzes[qIndex].answers![
+                                            ansIndex
+                                        ]!.point!.message
+                                    }
+                                </p>
+                            )}
+                        </div>
+                        <div className="col-span-1 flex items-center">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => remove(ansIndex)}
+                                disabled={fields.length <= 4}
+                            >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {errors.quizzes?.[qIndex]?.answers &&
+                typeof errors.quizzes[qIndex].answers === 'object' &&
+                'message' in errors.quizzes[qIndex].answers! && (
+                    <p className="text-sm text-destructive">
+                        {
+                            (
+                                errors.quizzes[qIndex].answers as {
+                                    message?: string;
+                                }
+                            ).message
+                        }
+                    </p>
+                )}
+        </div>
     );
 }

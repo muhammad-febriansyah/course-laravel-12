@@ -1,4 +1,5 @@
 import { CurrencyInput } from '@/components/currency-input';
+import { FormStepper } from '@/components/form-stepper';
 import {
     Accordion,
     AccordionContent,
@@ -7,6 +8,7 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -24,6 +26,8 @@ import { type BreadcrumbItem } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Head, router } from '@inertiajs/react';
 import {
+    ArrowLeft,
+    ArrowRight,
     BookOpen,
     FileQuestion,
     GripVertical,
@@ -35,7 +39,15 @@ import {
     X,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Controller, useFieldArray, useForm } from 'react-hook-form';
+import {
+    Control,
+    Controller,
+    FieldErrors,
+    useFieldArray,
+    useForm,
+    UseFormRegister,
+    UseFormWatch,
+} from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
@@ -73,6 +85,11 @@ interface Level {
     name: string;
 }
 
+interface Benefit {
+    id: number;
+    name: string;
+}
+
 interface VideoType {
     id?: number;
     title: string;
@@ -88,7 +105,11 @@ interface SectionType {
 interface QuizType {
     id?: number;
     question: string;
-    answer: string;
+    type: 'multiple_choice' | 'essay';
+    answer: {
+        options?: string[];
+        correct?: string;
+    } | string;
     image?: any;
     point: string;
 }
@@ -101,13 +122,13 @@ interface Kelas {
     level_id: number;
     price: number;
     discount: number;
-    benefit: string | null;
     desc: string | null;
     body: string | null;
     image: string | null;
     status: 'draft' | 'published';
     sections: SectionType[];
     quizzes: QuizType[];
+    benefits?: Benefit[];
 }
 
 interface Props {
@@ -115,6 +136,7 @@ interface Props {
     categories: Category[];
     types: Type[];
     levels: Level[];
+    benefits: Benefit[];
     basePath?: string;
 }
 
@@ -141,30 +163,30 @@ const resolveImageUrl = (path: string | null | undefined) => {
     return `/storage/${normalized}`;
 };
 
-// Zod schema for validation
+// Zod schema for validation - All fields optional for edit
 const kelasSchema = z.object({
-    title: z.string().min(1, 'Judul harus diisi'),
-    category_id: z.string().min(1, 'Kategori harus dipilih'),
-    type_id: z.string().min(1, 'Tipe harus dipilih'),
-    level_id: z.string().min(1, 'Level harus dipilih'),
-    price: z.string().min(1, 'Harga harus diisi'),
+    title: z.string().optional(),
+    category_id: z.string().optional(),
+    type_id: z.string().optional(),
+    level_id: z.string().optional(),
+    price: z.string().optional(),
     discount: z.string().optional(),
-    benefit: z.string().optional(),
+    benefits: z.array(z.number()).optional(),
     desc: z.string().optional(),
     body: z.string().optional(),
     image: z.any().optional(),
-    status: z.enum(['draft', 'published']),
+    status: z.enum(['draft', 'pending', 'approved', 'rejected']).optional(),
     sections: z
         .array(
             z.object({
                 id: z.number().optional(),
-                title: z.string().min(1, 'Judul section harus diisi'),
+                title: z.string().optional(),
                 videos: z
                     .array(
                         z.object({
                             id: z.number().optional(),
-                            title: z.string().min(1, 'Judul video harus diisi'),
-                            video: z.string().url('URL YouTube harus valid'),
+                            title: z.string().optional(),
+                            video: z.string().optional(),
                         }),
                     )
                     .optional(),
@@ -175,10 +197,17 @@ const kelasSchema = z.object({
         .array(
             z.object({
                 id: z.number().optional(),
-                question: z.string().min(1, 'Pertanyaan harus diisi'),
-                answer: z.string().min(1, 'Jawaban harus diisi'),
+                question: z.string().optional(),
                 image: z.any().optional(),
-                point: z.string().min(1, 'Poin harus diisi'),
+                answers: z
+                    .array(
+                        z.object({
+                            id: z.number().optional(),
+                            answer: z.string().optional(),
+                            point: z.string().optional(),
+                        }),
+                    )
+                    .optional(),
             }),
         )
         .optional(),
@@ -191,6 +220,7 @@ export default function Edit({
     categories,
     types,
     levels,
+    benefits,
     basePath = '/mentor/kelas',
 }: Props) {
     const breadcrumbs = getBreadcrumbs(basePath, kelas.id, kelas.title);
@@ -200,6 +230,14 @@ export default function Edit({
     const [quizImagePreviews, setQuizImagePreviews] = useState<{
         [key: number]: string;
     }>({});
+    const [currentStep, setCurrentStep] = useState(1);
+
+    const steps = [
+        { title: 'Informasi Dasar', description: 'Detail kelas' },
+        { title: 'Materi & Video', description: 'Konten pembelajaran' },
+        { title: 'Kuis', description: 'Evaluasi siswa' },
+        { title: 'Review', description: 'Periksa & simpan' },
+    ];
 
     const {
         register,
@@ -216,15 +254,21 @@ export default function Edit({
             level_id: String(kelas.level_id),
             price: String(kelas.price),
             discount: kelas.discount ? String(kelas.discount) : '',
-            benefit: kelas.benefit || '',
+            benefits: kelas.benefits?.map(b => b.id) || [],
             desc: kelas.desc || '',
             body: kelas.body || '',
             status: kelas.status,
             sections: kelas.sections || [],
             quizzes:
-                kelas.quizzes.map((q) => ({
-                    ...q,
-                    point: String(q.point),
+                kelas.quizzes.map((q: any) => ({
+                    id: q.id,
+                    question: q.question || '',
+                    image: q.image,
+                    answers: (q.quiz_answers || q.quizAnswers || []).map((ans: any) => ({
+                        id: ans.id,
+                        answer: ans.answer || '',
+                        point: ans.point ? String(ans.point) : '0',
+                    })),
                 })) || [],
         },
     });
@@ -307,7 +351,24 @@ export default function Edit({
         if (input) input.value = '';
     };
 
+    const nextStep = () => {
+        // No validation needed for edit - all fields are optional
+        setCurrentStep((prev) => Math.min(prev + 1, steps.length));
+    };
+
+    const prevStep = () => {
+        setCurrentStep((prev) => Math.max(prev - 1, 1));
+    };
+
+    const goToStep = (step: number) => {
+        if (step <= currentStep) {
+            setCurrentStep(step);
+        }
+    };
+
     const onSubmit = (data: KelasFormData) => {
+        console.log('Form submitted with data:', data);
+        console.log('Form errors:', errors);
         const formData = new FormData();
         formData.append('_method', 'PUT');
 
@@ -318,7 +379,11 @@ export default function Edit({
         formData.append('level_id', data.level_id);
         formData.append('price', data.price);
         if (data.discount) formData.append('discount', data.discount);
-        if (data.benefit) formData.append('benefit', data.benefit);
+        if (data.benefits && data.benefits.length > 0) {
+            data.benefits.forEach((benefitId, index) => {
+                formData.append(`benefits[${index}]`, String(benefitId));
+            });
+        }
         if (data.desc) formData.append('desc', data.desc);
         if (data.body) formData.append('body', data.body);
         formData.append('status', data.status);
@@ -367,8 +432,27 @@ export default function Edit({
                     formData.append(`quizzes[${qIndex}][id]`, String(quiz.id));
                 }
                 formData.append(`quizzes[${qIndex}][question]`, quiz.question);
-                formData.append(`quizzes[${qIndex}][answer]`, quiz.answer);
-                formData.append(`quizzes[${qIndex}][point]`, quiz.point);
+
+                // Quiz answers
+                if (quiz.answers && quiz.answers.length > 0) {
+                    quiz.answers.forEach((ans, ansIndex) => {
+                        // Only append id if it exists and is a valid number
+                        if (ans.id && typeof ans.id === 'number') {
+                            formData.append(
+                                `quizzes[${qIndex}][answers][${ansIndex}][id]`,
+                                String(ans.id),
+                            );
+                        }
+                        formData.append(
+                            `quizzes[${qIndex}][answers][${ansIndex}][answer]`,
+                            ans.answer || '',
+                        );
+                        formData.append(
+                            `quizzes[${qIndex}][answers][${ansIndex}][point]`,
+                            String(ans.point || '0'),
+                        );
+                    });
+                }
 
                 if (quiz.image && quiz.image[0]) {
                     formData.append(`quizzes[${qIndex}][image]`, quiz.image[0]);
@@ -376,25 +460,68 @@ export default function Edit({
             });
         }
 
-        router.post(`${basePath}/${kelas.id}`, formData, {
-            forceFormData: true,
-            onSuccess: () => {
-                toast.success('Kelas berhasil diupdate!');
-            },
-            onError: (errors) => {
-                console.error(errors);
-                toast.error('Gagal mengupdate kelas. Periksa form Anda.');
-            },
-        });
+        toast.promise(
+            new Promise((resolve, reject) => {
+                router.post(`${basePath}/${kelas.id}`, formData, {
+                    forceFormData: true,
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        resolve('success');
+                    },
+                    onError: (errors) => {
+                        console.error('Update errors:', errors);
+                        const firstError = Object.values(errors)[0];
+                        const errorMessage = Array.isArray(firstError)
+                            ? firstError[0]
+                            : firstError || 'Terjadi kesalahan saat mengupdate kelas';
+                        reject(new Error(errorMessage));
+                    },
+                });
+            }),
+            {
+                loading: 'Menyimpan perubahan...',
+                success: 'Kelas berhasil diupdate dan disimpan.',
+                error: (err) => err.message || 'Gagal mengupdate kelas',
+            }
+        );
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Edit ${kelas.title}`} />
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* Basic Information */}
-                <Card>
+            <div className="space-y-8 px-4 py-5">
+                {/* Stepper */}
+                <Card className="p-6">
+                    <FormStepper
+                        steps={steps}
+                        currentStep={currentStep}
+                        onStepClick={goToStep}
+                    />
+                </Card>
+
+                <form
+                    onSubmit={handleSubmit(
+                        onSubmit,
+                        (errors) => {
+                            console.log('Form validation failed:', errors);
+
+                            // Find first error
+                            const firstErrorField = Object.keys(errors)[0];
+                            const firstError = firstErrorField ? (errors as any)[firstErrorField] : null;
+                            const errorMessage = firstError?.message || 'Mohon lengkapi semua field yang wajib diisi';
+
+                            toast.error('Validasi Gagal!', {
+                                description: errorMessage,
+                                duration: 5000,
+                            });
+                        }
+                    )}
+                    className="space-y-6"
+                >
+                    {/* Step 1: Basic Information */}
+                    {currentStep === 1 && (
+                        <Card>
                     <CardHeader className="pb-4">
                         <div className="flex items-center gap-2">
                             <BookOpen className="h-5 w-5" />
@@ -406,7 +533,6 @@ export default function Edit({
                             <div className="col-span-2 space-y-2">
                                 <Label htmlFor="title">
                                     Judul Kelas
-                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="title"
@@ -423,7 +549,6 @@ export default function Edit({
                             <div className="space-y-2">
                                 <Label htmlFor="category_id">
                                     Kategori
-                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Controller
                                     name="category_id"
@@ -459,7 +584,6 @@ export default function Edit({
                             <div className="space-y-2">
                                 <Label htmlFor="type_id">
                                     Tipe
-                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Controller
                                     name="type_id"
@@ -495,7 +619,6 @@ export default function Edit({
                             <div className="space-y-2">
                                 <Label htmlFor="level_id">
                                     Level
-                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Controller
                                     name="level_id"
@@ -531,7 +654,6 @@ export default function Edit({
                             <div className="space-y-2">
                                 <Label htmlFor="price">
                                     Harga
-                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Controller
                                     name="price"
@@ -571,7 +693,6 @@ export default function Edit({
                             <div className="space-y-2">
                                 <Label htmlFor="status">
                                     Status
-                                    <span className="text-destructive">*</span>
                                 </Label>
                                 <Controller
                                     name="status"
@@ -589,7 +710,13 @@ export default function Edit({
                                                     Draft
                                                 </SelectItem>
                                                 <SelectItem value="pending">
-                                                    Ajukan Review
+                                                    Pending Review
+                                                </SelectItem>
+                                                <SelectItem value="approved">
+                                                    Approved
+                                                </SelectItem>
+                                                <SelectItem value="rejected">
+                                                    Rejected
                                                 </SelectItem>
                                             </SelectContent>
                                         </Select>
@@ -657,13 +784,39 @@ export default function Edit({
                                 )}
                             </div>
 
-                            <div className="col-span-2 space-y-2">
-                                <Label htmlFor="benefit">Benefit</Label>
-                                <Textarea
-                                    id="benefit"
-                                    {...register('benefit')}
-                                    placeholder="Masukkan benefit kelas"
-                                    rows={3}
+                            <div className="col-span-2 space-y-3">
+                                <Label>Benefits Kelas</Label>
+                                <Controller
+                                    name="benefits"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <div className="space-y-2 rounded-lg border p-4">
+                                            {benefits.map((benefit) => (
+                                                <div key={benefit.id} className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id={`benefit-${benefit.id}`}
+                                                        checked={field.value?.includes(benefit.id)}
+                                                        onCheckedChange={(checked) => {
+                                                            const currentValues = field.value || [];
+                                                            if (checked) {
+                                                                field.onChange([...currentValues, benefit.id]);
+                                                            } else {
+                                                                field.onChange(
+                                                                    currentValues.filter((id) => id !== benefit.id)
+                                                                );
+                                                            }
+                                                        }}
+                                                    />
+                                                    <label
+                                                        htmlFor={`benefit-${benefit.id}`}
+                                                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                                                    >
+                                                        {benefit.name}
+                                                    </label>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 />
                             </div>
 
@@ -688,10 +841,12 @@ export default function Edit({
                             </div>
                         </div>
                     </CardContent>
-                </Card>
+                        </Card>
+                    )}
 
-                {/* Sections & Videos - Same as create.tsx */}
-                <Card>
+                    {/* Step 2: Sections & Videos */}
+                    {currentStep === 2 && (
+                        <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-4">
                         <div className="flex items-center gap-2">
                             <Video className="h-5 w-5" />
@@ -731,10 +886,12 @@ export default function Edit({
                             </Accordion>
                         )}
                     </CardContent>
-                </Card>
+                        </Card>
+                    )}
 
-                {/* Quizzes - Same structure as create.tsx */}
-                <Card>
+                    {/* Step 3: Quizzes */}
+                    {currentStep === 3 && (
+                        <Card>
                     <CardHeader className="flex flex-row items-center justify-between pb-4">
                         <div className="flex items-center gap-2">
                             <FileQuestion className="h-5 w-5" />
@@ -747,8 +904,12 @@ export default function Edit({
                             onClick={() =>
                                 appendQuiz({
                                     question: '',
-                                    answer: '',
-                                    point: '10',
+                                    answers: [
+                                        { answer: '', point: '0' },
+                                        { answer: '', point: '0' },
+                                        { answer: '', point: '0' },
+                                        { answer: '', point: '0' },
+                                    ],
                                 })
                             }
                         >
@@ -764,177 +925,258 @@ export default function Edit({
                             </p>
                         ) : (
                             quizFields.map((quiz, qIndex) => (
-                                <div
+                                <QuizItem
                                     key={quiz.id}
-                                    className="space-y-4 rounded-lg border p-4"
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <h4 className="font-medium">
-                                            Kuis #{qIndex + 1}
-                                        </h4>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => removeQuiz(qIndex)}
-                                        >
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="col-span-2 space-y-2">
-                                            <Label>Pertanyaan</Label>
-                                            <Textarea
-                                                {...register(
-                                                    `quizzes.${qIndex}.question`,
-                                                )}
-                                                placeholder="Masukkan pertanyaan"
-                                                rows={3}
-                                            />
-                                            {errors.quizzes?.[qIndex]
-                                                ?.question && (
-                                                <p className="text-sm text-destructive">
-                                                    {
-                                                        errors.quizzes[qIndex]
-                                                            .question.message
-                                                    }
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div className="col-span-2 space-y-2">
-                                            <Label>Jawaban</Label>
-                                            <Textarea
-                                                {...register(
-                                                    `quizzes.${qIndex}.answer`,
-                                                )}
-                                                placeholder="Masukkan jawaban"
-                                                rows={2}
-                                            />
-                                            {errors.quizzes?.[qIndex]
-                                                ?.answer && (
-                                                <p className="text-sm text-destructive">
-                                                    {
-                                                        errors.quizzes[qIndex]
-                                                            .answer.message
-                                                    }
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label>Poin</Label>
-                                            <Input
-                                                type="number"
-                                                {...register(
-                                                    `quizzes.${qIndex}.point`,
-                                                )}
-                                                placeholder="10"
-                                            />
-                                            {errors.quizzes?.[qIndex]
-                                                ?.point && (
-                                                <p className="text-sm text-destructive">
-                                                    {
-                                                        errors.quizzes[qIndex]
-                                                            .point.message
-                                                    }
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label>Gambar (Opsional)</Label>
-                                            {quizImagePreviews[qIndex] ? (
-                                                <div className="relative">
-                                                    <img
-                                                        src={
-                                                            quizImagePreviews[
-                                                                qIndex
-                                                            ]
-                                                        }
-                                                        alt="Preview"
-                                                        className="h-32 w-full rounded-lg border object-cover"
-                                                    />
-                                                    <Button
-                                                        type="button"
-                                                        variant="destructive"
-                                                        size="icon"
-                                                        className="absolute top-2 right-2 h-8 w-8"
-                                                        onClick={() =>
-                                                            removeQuizImage(
-                                                                qIndex,
-                                                            )
-                                                        }
-                                                    >
-                                                        <X className="h-3 w-3" />
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-4 text-center transition-colors hover:border-muted-foreground/50">
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                                                        <p className="text-xs text-muted-foreground">
-                                                            PNG, JPG, JPEG
-                                                            hingga 2MB
-                                                        </p>
-                                                        <Input
-                                                            id={`quiz-image-${qIndex}`}
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="hidden"
-                                                            {...register(
-                                                                `quizzes.${qIndex}.image`,
-                                                                {
-                                                                    onChange: (
-                                                                        e,
-                                                                    ) =>
-                                                                        handleQuizImageChange(
-                                                                            e,
-                                                                            qIndex,
-                                                                        ),
-                                                                },
-                                                            )}
-                                                        />
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                document
-                                                                    .getElementById(
-                                                                        `quiz-image-${qIndex}`,
-                                                                    )
-                                                                    ?.click()
-                                                            }
-                                                        >
-                                                            <Upload className="mr-2 h-3 w-3" />
-                                                            Pilih Gambar
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
+                                    qIndex={qIndex}
+                                    register={register}
+                                    control={control}
+                                    errors={errors}
+                                    removeQuiz={removeQuiz}
+                                    quizImagePreviews={quizImagePreviews}
+                                    handleQuizImageChange={handleQuizImageChange}
+                                    removeQuizImage={removeQuizImage}
+                                />
                             ))
                         )}
                     </CardContent>
-                </Card>
+                        </Card>
+                    )}
 
-                {/* Submit Buttons */}
-                <div className="flex justify-end gap-4">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => router.visit('/kelas')}
-                    >
-                        Batal
-                    </Button>
-                    <Button type="submit">Update Kelas</Button>
-                </div>
-            </form>
+                    {/* Navigation Buttons */}
+                    <div className="flex justify-between gap-4">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => router.visit(basePath)}
+                        >
+                            Batal
+                        </Button>
+                        <div className="flex gap-4">
+                            {currentStep > 1 && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={prevStep}
+                                >
+                                    <ArrowLeft className="mr-2 h-4 w-4" />
+                                    Sebelumnya
+                                </Button>
+                            )}
+                            {currentStep < steps.length ? (
+                                <Button type="button" onClick={nextStep}>
+                                    Selanjutnya
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Button>
+                            ) : (
+                                <Button type="submit">Update Kelas</Button>
+                            )}
+                        </div>
+                    </div>
+                </form>
+            </div>
         </AppLayout>
+    );
+}
+
+// Separate component for Quiz Item
+interface QuizItemProps {
+    qIndex: number;
+    register: UseFormRegister<KelasFormData>;
+    control: Control<KelasFormData>;
+    errors: FieldErrors<KelasFormData>;
+    removeQuiz: (index: number) => void;
+    quizImagePreviews: { [key: number]: string };
+    handleQuizImageChange: (e: React.ChangeEvent<HTMLInputElement>, index: number) => void;
+    removeQuizImage: (index: number) => void;
+}
+
+function QuizItem({
+    qIndex,
+    register,
+    control,
+    errors,
+    removeQuiz,
+    quizImagePreviews,
+    handleQuizImageChange,
+    removeQuizImage,
+}: QuizItemProps) {
+    return (
+        <div className="space-y-4 rounded-lg border p-4">
+            <div className="flex items-center justify-between">
+                <h4 className="font-medium">Kuis #{qIndex + 1}</h4>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeQuiz(qIndex)}
+                >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-2">
+                    <Label>Pertanyaan</Label>
+                    <Textarea
+                        {...register(`quizzes.${qIndex}.question`)}
+                        placeholder="Masukkan pertanyaan"
+                        rows={3}
+                    />
+                    {errors.quizzes?.[qIndex]?.question && (
+                        <p className="text-sm text-destructive">
+                            {errors.quizzes[qIndex].question.message}
+                        </p>
+                    )}
+                </div>
+
+                <div className="col-span-2 space-y-2">
+                    <Label>Gambar (Opsional)</Label>
+                    {quizImagePreviews[qIndex] ? (
+                        <div className="relative">
+                            <img
+                                src={quizImagePreviews[qIndex]}
+                                alt="Preview"
+                                className="h-32 w-full rounded-lg border object-cover"
+                            />
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute top-2 right-2 h-8 w-8"
+                                onClick={() => removeQuizImage(qIndex)}
+                            >
+                                <X className="h-3 w-3" />
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-4 text-center transition-colors hover:border-muted-foreground/50">
+                            <div className="flex flex-col items-center gap-2">
+                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                <p className="text-xs text-muted-foreground">
+                                    PNG, JPG, JPEG hingga 2MB
+                                </p>
+                                <Input
+                                    id={`quiz-image-${qIndex}`}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    {...register(`quizzes.${qIndex}.image`, {
+                                        onChange: (e) =>
+                                            handleQuizImageChange(e, qIndex),
+                                    })}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        document
+                                            .getElementById(
+                                                `quiz-image-${qIndex}`,
+                                            )
+                                            ?.click()
+                                    }
+                                >
+                                    <Upload className="mr-2 h-3 w-3" />
+                                    Pilih Gambar
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <QuizAnswers
+                    qIndex={qIndex}
+                    control={control}
+                    register={register}
+                    errors={errors}
+                />
+            </div>
+        </div>
+    );
+}
+
+// Component for Quiz Answers
+interface QuizAnswersProps {
+    qIndex: number;
+    control: Control<KelasFormData>;
+    register: UseFormRegister<KelasFormData>;
+    errors: FieldErrors<KelasFormData>;
+}
+
+function QuizAnswers({
+    qIndex,
+    control,
+    register,
+    errors,
+}: QuizAnswersProps) {
+    const { fields, append, remove } = useFieldArray({
+        control,
+        name: `quizzes.${qIndex}.answers`,
+    });
+
+    return (
+        <div className="col-span-2 space-y-3">
+            <div className="flex items-center justify-between">
+                <Label>Opsi Jawaban</Label>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ answer: '', point: '0' })}
+                >
+                    <Plus className="mr-2 h-3 w-3" />
+                    Tambah Jawaban
+                </Button>
+            </div>
+
+            <div className="space-y-3">
+                {fields.map((field, ansIndex) => (
+                    <div key={field.id} className="grid grid-cols-12 gap-2 items-start">
+                        <div className="col-span-8 space-y-1">
+                            <Input
+                                {...register(`quizzes.${qIndex}.answers.${ansIndex}.answer`)}
+                                placeholder={`Jawaban ${ansIndex + 1}`}
+                            />
+                            {errors.quizzes?.[qIndex]?.answers?.[ansIndex]?.answer && (
+                                <p className="text-xs text-destructive">
+                                    {errors.quizzes[qIndex].answers![ansIndex]!.answer!.message}
+                                </p>
+                            )}
+                        </div>
+                        <div className="col-span-3 space-y-1">
+                            <Input
+                                type="number"
+                                {...register(`quizzes.${qIndex}.answers.${ansIndex}.point`)}
+                                placeholder="Poin"
+                            />
+                            {errors.quizzes?.[qIndex]?.answers?.[ansIndex]?.point && (
+                                <p className="text-xs text-destructive">
+                                    {errors.quizzes[qIndex].answers![ansIndex]!.point!.message}
+                                </p>
+                            )}
+                        </div>
+                        <div className="col-span-1 flex items-center">
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => remove(ansIndex)}
+                                disabled={fields.length <= 4}
+                            >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {errors.quizzes?.[qIndex]?.answers && typeof errors.quizzes[qIndex].answers === 'object' && 'message' in errors.quizzes[qIndex].answers! && (
+                <p className="text-sm text-destructive">
+                    {(errors.quizzes[qIndex].answers as { message?: string }).message}
+                </p>
+            )}
+        </div>
     );
 }
 
@@ -967,17 +1209,16 @@ function SectionItem({
                         <GripVertical className="h-4 w-4 text-muted-foreground" />
                         <span>Section #{sIndex + 1}</span>
                     </div>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
+                    <span
+                        role="button"
+                        className="inline-flex h-9 items-center justify-center rounded-md px-3 text-sm hover:bg-accent hover:text-accent-foreground"
                         onClick={(e) => {
                             e.stopPropagation();
                             removeSection(sIndex);
                         }}
                     >
                         <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    </span>
                 </div>
             </AccordionTrigger>
             <AccordionContent className="space-y-4 pt-4">

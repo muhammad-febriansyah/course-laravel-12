@@ -17,7 +17,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import type { PageProps } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
-import { ChevronDown, LogOut, Menu, User } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, LogOut, Menu, User } from 'lucide-react';
 import * as React from 'react';
 
 export function FloatingNavbar() {
@@ -237,7 +237,7 @@ export function FloatingNavbar() {
                                 <DropdownMenuContent className="w-56 rounded-lg border border-slate-200 bg-white p-2 shadow-lg" align="end">
                                     <DropdownMenuItem asChild className="cursor-pointer">
                                         <Link href="/dashboard" className="flex items-center gap-2">
-                                            <User className="h-4 w-4" />
+                                            <LayoutDashboard className="h-4 w-4" />
                                             Dashboard
                                         </Link>
                                     </DropdownMenuItem>

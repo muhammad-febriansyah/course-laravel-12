@@ -21,6 +21,8 @@ class Enrollment extends Model
         'enrolled_at',
         'completed_at',
         'expires_at',
+        'certificate_code',
+        'certificate_issued_at',
     ];
 
     protected $casts = [
@@ -31,6 +33,7 @@ class Enrollment extends Model
         'enrolled_at' => 'datetime',
         'completed_at' => 'datetime',
         'expires_at' => 'datetime',
+        'certificate_issued_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

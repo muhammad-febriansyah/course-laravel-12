@@ -151,4 +151,64 @@ class DiscussionController extends Controller
 
         return redirect()->back()->with('success', 'Diskusi berhasil dihapus.');
     }
+
+    /**
+     * Display all discussions from all mentor's courses
+     */
+    public function indexAll(Request $request)
+    {
+        $mentor = auth()->user();
+        $filter = $request->get('filter', 'all'); // all, unresolved, resolved
+        $search = $request->get('search');
+
+        // Get all kelas IDs owned by this mentor
+        $kelasIds = Kelas::where('user_id', $mentor->id)->pluck('id');
+
+        $discussions = Discussion::with(['user:id,name,avatar', 'kelas:id,title,slug', 'replies'])
+            ->whereIn('kelas_id', $kelasIds)
+            ->questions() // Only main questions, not replies
+            ->when($filter === 'unresolved', fn($q) => $q->unresolved())
+            ->when($filter === 'resolved', fn($q) => $q->resolved())
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('title', 'like', "%{$search}%")
+                        ->orWhere('content', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(20);
+
+        $stats = [
+            'total' => Discussion::whereIn('kelas_id', $kelasIds)->questions()->count(),
+            'unresolved' => Discussion::whereIn('kelas_id', $kelasIds)->questions()->unresolved()->count(),
+            'resolved' => Discussion::whereIn('kelas_id', $kelasIds)->questions()->resolved()->count(),
+        ];
+
+        return Inertia::render('Mentor/Discussions/IndexAll', [
+            'discussions' => $discussions,
+            'stats' => $stats,
+            'filter' => $filter,
+            'search' => $search,
+        ]);
+    }
+
+    /**
+     * Show a specific discussion from global view
+     */
+    public function showGlobal(Discussion $discussion)
+    {
+        $mentor = auth()->user();
+
+        // Load relationships
+        $discussion->load(['user:id,name,avatar', 'kelas:id,title,slug,user_id', 'replies.user:id,name,avatar']);
+
+        // Verify ownership - check if this discussion belongs to mentor's course
+        abort_if($discussion->kelas->user_id !== $mentor->id, 403);
+
+        return Inertia::render('Mentor/Discussions/Show', [
+            'discussion' => $discussion,
+            'kelas' => $discussion->kelas,
+            'basePath' => '/mentor/diskusi',
+        ]);
+    }
 }

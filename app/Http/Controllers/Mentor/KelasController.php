@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Mentor;
 
 use App\Http\Controllers\Controller;
+use App\Models\Benefit;
 use App\Models\Category;
 use App\Models\Kelas;
 use App\Models\Level;
@@ -63,6 +64,7 @@ class KelasController extends Controller
             'categories' => Category::select('id', 'name')->get(),
             'types' => Type::select('id', 'name')->get(),
             'levels' => Level::select('id', 'name')->get(),
+            'benefits' => Benefit::select('id', 'name')->get(),
             'basePath' => '/mentor/kelas',
         ]);
     }
@@ -88,6 +90,7 @@ class KelasController extends Controller
 
             $this->syncSections($kelas, $validated['sections'] ?? []);
             $this->syncQuizzes($kelas, $validated['quizzes'] ?? []);
+            $this->syncBenefits($kelas, $validated['benefits'] ?? []);
 
             DB::commit();
 
@@ -127,13 +130,14 @@ class KelasController extends Controller
     {
         $this->authorizeOwnership($kelas);
 
-        $kelas->load(['sections.videos', 'quizzes.quizAnswers']);
+        $kelas->load(['sections.videos', 'quizzes.quizAnswers', 'benefits']);
 
         return Inertia::render('kelas/edit', [
             'kelas' => $kelas,
             'categories' => Category::select('id', 'name')->get(),
             'types' => Type::select('id', 'name')->get(),
             'levels' => Level::select('id', 'name')->get(),
+            'benefits' => Benefit::select('id', 'name')->get(),
             'basePath' => '/mentor/kelas',
         ]);
     }
@@ -161,6 +165,7 @@ class KelasController extends Controller
 
             $this->syncSections($kelas, $validated['sections'] ?? []);
             $this->syncQuizzes($kelas, $validated['quizzes'] ?? []);
+            $this->syncBenefits($kelas, $validated['benefits'] ?? []);
 
             DB::commit();
 
@@ -200,11 +205,12 @@ class KelasController extends Controller
             'level_id' => ['required', 'exists:levels,id'],
             'price' => ['required', 'numeric', 'min:0'],
             'discount' => ['nullable', 'numeric', 'min:0'],
-            'benefit' => ['nullable', 'string'],
             'desc' => ['nullable', 'string'],
             'body' => ['nullable', 'string'],
             'status' => ['required', $statusRule],
-            'image' => [$isUpdate ? 'nullable' : 'required', File::image()->max(2 * 1024)],
+            'image' => [$isUpdate ? 'nullable' : 'required', File::image()->max(5 * 1024)],
+            'benefits' => ['nullable', 'array'],
+            'benefits.*' => ['required', 'exists:benefits,id'],
             'sections' => ['nullable', 'array'],
             'sections.*.id' => ['nullable', 'exists:sections,id'],
             'sections.*.title' => ['required', 'string', 'max:255'],
@@ -215,9 +221,11 @@ class KelasController extends Controller
             'quizzes' => ['nullable', 'array'],
             'quizzes.*.id' => ['nullable', 'exists:quizzes,id'],
             'quizzes.*.question' => ['required', 'string'],
-            'quizzes.*.answer' => ['required'],
-            'quizzes.*.image' => ['nullable', File::image()->max(2 * 1024)],
-            'quizzes.*.point' => ['required', 'integer', 'min:0'],
+            'quizzes.*.image' => ['nullable', File::image()->max(5 * 1024)],
+            'quizzes.*.answers' => ['required', 'array', 'min:4'],
+            'quizzes.*.answers.*.id' => ['nullable', 'exists:quiz_answers,id'],
+            'quizzes.*.answers.*.answer' => ['required', 'string'],
+            'quizzes.*.answers.*.point' => ['required', 'integer', 'min:0'],
         ]);
     }
 
@@ -265,7 +273,7 @@ class KelasController extends Controller
                 $quizData['image'] = $quizData['image']->store('quizzes', 'public');
             }
 
-            $payload = Arr::except($quizData, ['answer', 'answers']);
+            $payload = Arr::except($quizData, ['answers']);
 
             $quiz = isset($quizData['id'])
                 ? $kelas->quizzes()->where('id', $quizData['id'])->firstOrFail()
@@ -274,41 +282,47 @@ class KelasController extends Controller
             $quiz->update($payload);
             $existingIds[] = $quiz->id;
 
-            $this->syncQuizAnswers($quiz, $quizData['answer'] ?? null, (int) ($quizData['point'] ?? $quiz->point ?? 0));
+            $this->syncQuizAnswers($quiz, $quizData['answers'] ?? []);
         }
 
         $kelas->quizzes()->whereNotIn('id', $existingIds)->delete();
     }
 
-    private function syncQuizAnswers(Quiz $quiz, $answerPayload, int $defaultPoint): void
+    private function syncQuizAnswers(Quiz $quiz, array $answers): void
     {
         $answerIds = [];
 
-        if (is_array($answerPayload) && isset($answerPayload['options'], $answerPayload['correct'])) {
-            foreach ((array) $answerPayload['options'] as $option) {
-                $isCorrect = $option === $answerPayload['correct'];
-
-                $answer = $quiz->quizAnswers()->updateOrCreate(
-                    ['answer' => $option],
-                    ['point' => $isCorrect ? $defaultPoint : 0],
-                );
-
+        foreach ($answers as $answerData) {
+            if (isset($answerData['id'])) {
+                // Update existing answer
+                $answer = $quiz->quizAnswers()->where('id', $answerData['id'])->first();
+                if ($answer) {
+                    $answer->update([
+                        'answer' => $answerData['answer'],
+                        'point' => $answerData['point'],
+                    ]);
+                    $answerIds[] = $answer->id;
+                }
+            } else {
+                // Create new answer
+                $answer = $quiz->quizAnswers()->create([
+                    'answer' => $answerData['answer'],
+                    'point' => $answerData['point'],
+                ]);
                 $answerIds[] = $answer->id;
             }
-        } elseif (is_string($answerPayload) && $answerPayload !== '') {
-            $answer = $quiz->quizAnswers()->updateOrCreate(
-                ['answer' => $answerPayload],
-                ['point' => $defaultPoint],
-            );
-
-            $answerIds[] = $answer->id;
         }
 
         if (! empty($answerIds)) {
             $quiz->quizAnswers()->whereNotIn('id', $answerIds)->delete();
-        } elseif ($answerPayload === null) {
+        } else {
             $quiz->quizAnswers()->delete();
         }
+    }
+
+    protected function syncBenefits(Kelas $kelas, array $benefitIds): void
+    {
+        $kelas->benefits()->sync($benefitIds);
     }
 
     protected function authorizeOwnership(Kelas $kelas): void

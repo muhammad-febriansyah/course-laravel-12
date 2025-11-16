@@ -15,11 +15,6 @@ class Quiz extends Model
         'kelas_id',
         'question',
         'image',
-        'point',
-    ];
-
-    protected $casts = [
-        'point' => 'integer',
     ];
 
     // Relationships

@@ -4,6 +4,7 @@ namespace App\Presentation\Http\Controllers\Front;
 
 use App\Application\Courses\Services\CourseCatalogService;
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Setting;
 use App\Models\Enrollment;
 use App\Presentation\Http\Resources\CourseResource;
@@ -24,11 +25,28 @@ class CourseCatalogController extends Controller
     {
         $filters = $request->only(['search', 'category', 'level', 'type']);
 
+        $categoryId = null;
+        if (isset($filters['category']) && $filters['category'] !== '') {
+            $rawCategory = (string) $filters['category'];
+
+            if (ctype_digit($rawCategory)) {
+                $categoryId = (int) $rawCategory;
+            } else {
+                $categoryId = Category::query()
+                    ->where('slug', $rawCategory)
+                    ->value('id');
+            }
+        }
+
         $courses = $this->catalogService->paginateCourses(
             search: $filters['search'] ?? null,
-            categoryId: $filters['category'] ? (int) $filters['category'] : null,
-            levelId: $filters['level'] ? (int) $filters['level'] : null,
-            typeId: $filters['type'] ? (int) $filters['type'] : null,
+            categoryId: $categoryId,
+            levelId: isset($filters['level']) && $filters['level'] !== ''
+                ? (int) $filters['level']
+                : null,
+            typeId: isset($filters['type']) && $filters['type'] !== ''
+                ? (int) $filters['type']
+                : null,
             perPage: 12,
         );
 

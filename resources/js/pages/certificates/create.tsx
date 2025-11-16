@@ -343,12 +343,32 @@ export default function CertificatesCreate({ defaultLayout }: Props) {
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <Label>Warna (Hex)</Label>
-                                                <Input
-                                                    value={field.color}
-                                                    onChange={(e) => handleFieldChange(index, 'color', e.target.value)}
-                                                    placeholder="#1f2937"
-                                                />
+                                                <Label>Warna Teks</Label>
+                                                <div className="flex items-center gap-2">
+                                                    <Input
+                                                        type="color"
+                                                        className="h-10 w-16 p-1"
+                                                        value={field.color}
+                                                        onChange={(e) =>
+                                                            handleFieldChange(
+                                                                index,
+                                                                'color',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                    />
+                                                    <Input
+                                                        value={field.color}
+                                                        onChange={(e) =>
+                                                            handleFieldChange(
+                                                                index,
+                                                                'color',
+                                                                e.target.value,
+                                                            )
+                                                        }
+                                                        placeholder="#1f2937"
+                                                    />
+                                                </div>
                                             </div>
                                             <div className="space-y-2">
                                                 <Label>Perataan</Label>

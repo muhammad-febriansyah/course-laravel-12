@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('quizzes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('kelas_id');
-            $table->string('question');
-            $table->string('image')->nullable();
-            $table->timestamps();
+        Schema::table('quizzes', function (Blueprint $table) {
+            $table->dropColumn('point');
         });
     }
 
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('quizzes');
+        Schema::table('quizzes', function (Blueprint $table) {
+            $table->integer('point')->default(0);
+        });
     }
 };

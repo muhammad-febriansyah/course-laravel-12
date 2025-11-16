@@ -4,10 +4,11 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
-
 createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
+    title: (title) => {
+        const siteName = 'SKill UP'; // Fallback, will be replaced by server-side rendering
+        return title ? `${title} - ${siteName}` : siteName;
+    },
     resolve: (name) =>
         resolvePageComponent(
             `./pages/${name}.tsx`,

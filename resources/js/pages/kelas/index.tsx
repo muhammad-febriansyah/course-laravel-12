@@ -104,6 +104,14 @@ const formatCurrency = (value: number | string | undefined) => {
     return `Rp ${Number(numeric || 0).toLocaleString('id-ID')}`;
 };
 
+const resolveImageUrl = (path: string | null | undefined) => {
+    if (!path) return null;
+    if (path.startsWith('http') || path.startsWith('blob:')) {
+        return path;
+    }
+    return `/storage/${path}`;
+};
+
 export default function KelasIndex({
     kelas,
     categories,
@@ -216,6 +224,29 @@ export default function KelasIndex({
                 cell: ({ row }) => row.index + 1,
                 enableSorting: false,
                 size: 40,
+            },
+            {
+                accessorKey: 'image',
+                header: 'Gambar',
+                enableSorting: false,
+                cell: ({ row }) => {
+                    const imageUrl = resolveImageUrl(row.original.image);
+                    return (
+                        <div className="flex items-center justify-center">
+                            {imageUrl ? (
+                                <img
+                                    src={imageUrl}
+                                    alt={row.original.title}
+                                    className="h-16 w-24 rounded-md object-cover"
+                                />
+                            ) : (
+                                <div className="h-16 w-24 rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                                    No Image
+                                </div>
+                            )}
+                        </div>
+                    );
+                },
             },
             {
                 accessorKey: 'title',
@@ -417,6 +448,31 @@ export default function KelasIndex({
                     )}
                 </div>
 
+                {summary && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Statistik Penjualan</CardTitle>
+                            <CardDescription>
+                                Ringkasan performa kelas yang kamu kelola.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-4 md:grid-cols-3">
+                            <div className="rounded-lg border border-muted-foreground/20 p-4">
+                                <p className="text-sm text-muted-foreground">Total Kelas</p>
+                                <p className="text-2xl font-semibold">{summary.totalClass}</p>
+                            </div>
+                            <div className="rounded-lg border border-muted-foreground/20 p-4">
+                                <p className="text-sm text-muted-foreground">Total Penjualan</p>
+                                <p className="text-2xl font-semibold">{summary.totalSales}</p>
+                            </div>
+                            <div className="rounded-lg border border-muted-foreground/20 p-4">
+                                <p className="text-sm text-muted-foreground">Total Pendapatan</p>
+                                <p className="text-2xl font-semibold">{summary.totalRevenue}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 <div className="grid gap-6">
                     <div className="space-y-6">
                         <Card className="border-muted-foreground/20">
@@ -518,57 +574,31 @@ export default function KelasIndex({
                         </Card>
                     </div>
 
-                    <div className="space-y-6">
-                        {summary && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Statistik Penjualan</CardTitle>
-                                    <CardDescription>
-                                        Ringkasan performa kelas yang kamu kelola.
-                                    </CardDescription>
-                                </CardHeader>
-                                <CardContent className="grid gap-4">
-                                    <div className="rounded-lg border border-muted-foreground/20 p-4">
-                                        <p className="text-sm text-muted-foreground">Total Kelas</p>
-                                        <p className="text-2xl font-semibold">{summary.totalClass}</p>
-                                    </div>
-                                    <div className="rounded-lg border border-muted-foreground/20 p-4">
-                                        <p className="text-sm text-muted-foreground">Total Penjualan</p>
-                                        <p className="text-2xl font-semibold">{summary.totalSales}</p>
-                                    </div>
-                                    <div className="rounded-lg border border-muted-foreground/20 p-4">
-                                        <p className="text-sm text-muted-foreground">Total Pendapatan</p>
-                                        <p className="text-2xl font-semibold">{summary.totalRevenue}</p>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {selectedKelas && (
-                            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Hapus Kelas</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Apakah Anda yakin ingin menghapus kelas "
-                                            {selectedKelas?.title}"? Tindakan ini tidak dapat dibatalkan dan akan
-                                            menghapus materi terkait.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Batal</AlertDialogCancel>
-                                        <AlertDialogAction
-                                            onClick={handleDelete}
-                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                        >
-                                            Hapus
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        )}
-                    </div>
                 </div>
+
+                {selectedKelas && (
+                    <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Hapus Kelas</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Apakah Anda yakin ingin menghapus kelas "
+                                    {selectedKelas?.title}"? Tindakan ini tidak dapat dibatalkan dan akan
+                                    menghapus materi terkait.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Batal</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={handleDelete}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    Hapus
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
             </div>
         </AppLayout>
     );

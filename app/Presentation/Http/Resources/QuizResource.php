@@ -12,8 +12,7 @@ class QuizResource extends JsonResource
         return [
             'id' => $this->id,
             'question' => $this->question,
-            'point' => $this->point,
-            'answer' => $this->answer,
+            'image' => $this->image,
             'answers' => $this->whenLoaded(
                 'quizAnswers',
                 fn () => $this->quizAnswers->map(fn ($answer) => [

@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
@@ -30,7 +31,6 @@ class Kelas extends Model
         'slug',
         'price',
         'discount',
-        'benefit',
         'desc',
         'body',
         'image',
@@ -112,6 +112,12 @@ class Kelas extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(Review::class, 'kelas_id');
+    }
+
+    public function benefits(): BelongsToMany
+    {
+        return $this->belongsToMany(Benefit::class, 'benefit_kelas', 'kelas_id', 'benefit_id')
+            ->withTimestamps();
     }
 
     // Helper methods

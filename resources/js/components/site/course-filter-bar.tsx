@@ -19,7 +19,25 @@ interface CourseFilterBarProps {
 
 export function CourseFilterBar({ filters, options }: CourseFilterBarProps) {
     const [search, setSearch] = useState(filters.search ?? '');
-    const [category, setCategory] = useState(filters.category ?? '');
+
+    const resolveInitialCategory = () => {
+        const value = filters.category ?? '';
+        if (!value) return '';
+
+        // If the value is already an ID string, use it directly
+        if (/^\d+$/.test(String(value))) {
+            return String(value);
+        }
+
+        // Otherwise, try to match by slug
+        const match = options.categories.find(
+            (option) => option.slug === value,
+        );
+
+        return match ? String(match.id) : '';
+    };
+
+    const [category, setCategory] = useState(resolveInitialCategory);
     const [level, setLevel] = useState(filters.level ?? '');
     const [type, setType] = useState(filters.type ?? '');
 
@@ -48,8 +66,8 @@ export function CourseFilterBar({ filters, options }: CourseFilterBarProps) {
     };
 
     return (
-        <div className="grid gap-4 rounded-xl border bg-background p-4 shadow-sm md:grid-cols-5">
-            <div className="md:col-span-2">
+        <div className="grid gap-4 rounded-xl border bg-background p-4 shadow-sm lg:grid-cols-5">
+            <div className="lg:col-span-2">
                 <Label htmlFor="search">Cari Kursus</Label>
                 <Input
                     id="search"
@@ -72,7 +90,6 @@ export function CourseFilterBar({ filters, options }: CourseFilterBarProps) {
                         <SelectValue placeholder="Semua kategori" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Semua kategori</SelectItem>
                         {options.categories.map((option) => (
                             <SelectItem key={option.id} value={String(option.id)}>
                                 {option.name}
@@ -89,7 +106,6 @@ export function CourseFilterBar({ filters, options }: CourseFilterBarProps) {
                         <SelectValue placeholder="Semua level" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Semua level</SelectItem>
                         {options.levels.map((option) => (
                             <SelectItem key={option.id} value={String(option.id)}>
                                 {option.name}
@@ -106,7 +122,6 @@ export function CourseFilterBar({ filters, options }: CourseFilterBarProps) {
                         <SelectValue placeholder="Semua tipe" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Semua tipe</SelectItem>
                         {options.types.map((option) => (
                             <SelectItem key={option.id} value={String(option.id)}>
                                 {option.name}

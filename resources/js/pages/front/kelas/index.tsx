@@ -485,13 +485,13 @@ export default function CoursesIndex() {
                         )}
 
                         {courses.meta.last_page > 1 && (
-                            <nav className="mt-12 flex justify-center">
-                                <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 shadow-md">
+                            <nav className="mt-12 flex justify-center px-2">
+                                <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-2 shadow-md">
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        className="rounded-full px-4 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 disabled:text-slate-300"
+                                        className="rounded-full px-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 disabled:text-slate-300"
                                         disabled={courses.meta.current_page === 1}
                                         onClick={() =>
                                             handlePageChange(
@@ -517,15 +517,15 @@ export default function CoursesIndex() {
                                                     type="button"
                                                     size="sm"
                                                     variant={
-                                                        item === courses.meta.current_page
-                                                            ? 'default'
-                                                            : 'outline'
-                                                    }
-                                                    className={`rounded-full px-4 text-sm ${
-                                                        item === courses.meta.current_page
-                                                            ? ''
-                                                            : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
-                                                    }`}
+                                            item === courses.meta.current_page
+                                                ? 'default'
+                                                : 'outline'
+                                        }
+                                        className={`rounded-full px-3 text-sm ${
+                                            item === courses.meta.current_page
+                                                ? ''
+                                                : 'text-slate-600 hover:bg-blue-50 hover:text-blue-700'
+                                        }`}
                                                     onClick={() =>
                                                         handlePageChange(item)
                                                     }
@@ -540,7 +540,7 @@ export default function CoursesIndex() {
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        className="rounded-full px-4 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 disabled:text-slate-300"
+                                        className="rounded-full px-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 disabled:text-slate-300"
                                         disabled={
                                             courses.meta.current_page ===
                                             courses.meta.last_page
