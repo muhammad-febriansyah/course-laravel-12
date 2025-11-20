@@ -8,19 +8,20 @@ use App\Presentation\Http\Resources\TransactionResource;
 use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class TransactionDetailController extends Controller
 {
-    public function __construct(private readonly ImageService $imageService)
-    {
-    }
+    public function __construct(private readonly ImageService $imageService) {}
 
-    public function __invoke(Request $request, Transaction $transaction): Response
+    public function __invoke(Request $request, Transaction $transaction)
     {
         $user = $request->user();
 
-        abort_if($transaction->user_id !== $user->id, 404);
+        if ($transaction->user_id !== $user->id) {
+            return redirect()
+                ->route('user.transactions')
+                ->with('error', 'Transaksi tidak ditemukan.');
+        }
 
         $transaction->load('kelas');
 

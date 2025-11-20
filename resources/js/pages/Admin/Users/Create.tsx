@@ -7,8 +7,8 @@ interface CreateUserPageProps {
 }
 
 const breadcrumbs = [
-    { title: 'Pengguna', href: '/users' },
-    { title: 'Tambah Pengguna', href: '/users/create' },
+    { title: 'Pengguna', href: '/admin/users' },
+    { title: 'Tambah Pengguna', href: '/admin/users/create' },
 ];
 
 export default function CreateUserPage({ roles }: CreateUserPageProps) {
@@ -31,7 +31,7 @@ export default function CreateUserPage({ roles }: CreateUserPageProps) {
     };
 
     const handleSubmit = () => {
-        post('/users', { forceFormData: true });
+        post('/admin/users', { forceFormData: true });
     };
 
     return (

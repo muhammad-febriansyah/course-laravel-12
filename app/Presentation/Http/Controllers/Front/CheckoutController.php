@@ -58,9 +58,12 @@ class CheckoutController extends Controller
             ->values()
             ->all();
 
+        $courseResource = CourseResource::make($course)->resolve();
+        $courseResource['image'] = $this->imageService->url($courseResource['image'] ?? null);
+
         return Inertia::render('front/checkout/show', [
             'settings' => $this->prepareSettings(),
-            'course' => CourseResource::make($course)->resolve(),
+            'course' => $courseResource,
             'promos' => $promos,
             'alreadyEnrolled' => $alreadyEnrolled,
             'tripayChannels' => $tripayChannels,
@@ -92,22 +95,22 @@ class CheckoutController extends Controller
             ]);
         }
 
-        $redirectRoute = $transaction->status === 'paid'
-            ? 'dashboard'
-            : 'user.transactions.show';
+        // If payment is already completed (cash method)
+        if ($transaction->status === 'paid') {
+            return redirect()
+                ->route('dashboard')
+                ->with('success', 'Pembelian berhasil! Kursus sudah dapat diakses.');
+        }
 
-        $redirectParams = $transaction->status === 'paid'
-            ? []
-            : ['transaction' => $transaction->id];
+        // If Tripay payment with payment URL, redirect directly to Tripay payment page
+        if ($transaction->payment_method === 'tripay' && $transaction->payment_url) {
+            return redirect()->away($transaction->payment_url);
+        }
 
+        // Fallback to transaction detail page
         return redirect()
-            ->route($redirectRoute, $redirectParams)
-            ->with(
-                $transaction->status === 'paid' ? 'success' : 'info',
-                $transaction->status === 'paid'
-                    ? 'Pembelian berhasil! Kursus sudah dapat diakses.'
-                    : 'Transaksi berhasil dibuat. Silakan selesaikan pembayaran.'
-            );
+            ->route('user.transactions.show', ['transaction' => $transaction->id])
+            ->with('info', 'Transaksi berhasil dibuat. Silakan selesaikan pembayaran.');
     }
 
     protected function prepareSettings(): ?array

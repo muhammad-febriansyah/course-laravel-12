@@ -14,6 +14,17 @@ class QuizSeeder extends Seeder
      */
     public function run(): void
     {
+        // Target course for these dummy quizzes
+        $kelas = Kelas::where('slug', 'android-firebase-integration')->first()
+            ?? Kelas::first();
+
+        if (! $kelas) {
+            $kelas = Kelas::factory()->create([
+                'title' => 'Android Firebase Integration',
+                'slug' => 'android-firebase-integration',
+            ]);
+        }
+
         $quizzes = [
             [
                 'question' => 'Directive Blade apa yang digunakan untuk melakukan perulangan pada koleksi data?',
@@ -87,24 +98,15 @@ class QuizSeeder extends Seeder
             ],
         ];
 
-        $kelasIds = Kelas::pluck('id')->all();
-
-        if (empty($kelasIds)) {
-            $kelasIds[] = Kelas::factory()->create()->id;
-        }
-
-        $kelasCount = count($kelasIds);
-
         foreach ($quizzes as $index => $data) {
-            $kelasId = $kelasIds[$index % $kelasCount];
-
             $quiz = Quiz::updateOrCreate(
                 [
-                    'kelas_id' => $kelasId,
+                    'kelas_id' => $kelas->id,
                     'question' => $data['question'],
                 ],
                 [
-                    'point' => $data['point'],
+                    // keep image null by default; quiz points are defined per answer (quiz_answers.point)
+                    'image' => null,
                 ],
             );
 

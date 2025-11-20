@@ -157,9 +157,9 @@ export default function TransactionDetailPage({ transaction }: TransactionDetail
     return (
         <AppLayout
             breadcrumbs={[
-                { title: 'Dashboard', href: '/dashboard' },
-                { title: 'Histori Transaksi', href: '/dashboard/transactions' },
-                { title: transaction.invoiceNumber, href: `/dashboard/transactions/${transaction.id}` },
+                { title: 'Dashboard', href: route('dashboard') },
+                { title: 'Histori Transaksi', href: route('user.transactions') },
+                { title: transaction.invoiceNumber, href: route('user.transactions.show', { transaction: transaction.id }) },
             ]}
         >
             <Head title={`Transaksi ${transaction.invoiceNumber}`} />
@@ -296,15 +296,16 @@ export default function TransactionDetailPage({ transaction }: TransactionDetail
                                     </Button>
                                 ) : null}
 
-                                <Button
+                                {/* Invoice download will be implemented later */}
+                                {/* <Button
                                     asChild
                                     variant="secondary"
                                     className="rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                                 >
-                                    <Link href={`/dashboard/transactions/${transaction.id}/invoice`} prefetch>
+                                    <Link href={route('user.transactions.invoice', { transaction: transaction.id })} prefetch>
                                         Unduh Invoice
                                     </Link>
-                                </Button>
+                                </Button> */}
                             </div>
 
                             <Card className="border border-slate-200 bg-white">

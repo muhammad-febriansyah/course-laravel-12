@@ -67,6 +67,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('pengaturan', [SettingController::class, 'index'])->name('settings.index');
         Route::post('pengaturan', [SettingController::class, 'update'])->name('settings.update');
 
+        // Mentor Earnings
+        Route::get('mentor-earnings', [\App\Http\Controllers\Admin\MentorEarningsController::class, 'index'])->name('mentor-earnings.index');
+        Route::get('mentor-earnings/export/pdf', [\App\Http\Controllers\Admin\MentorEarningsController::class, 'exportPdf'])->name('mentor-earnings.export');
+        Route::get('mentor-earnings/{mentor}', [\App\Http\Controllers\Admin\MentorEarningsController::class, 'show'])->name('mentor-earnings.show');
+        Route::get('mentor-earnings/{mentor}/export/pdf', [\App\Http\Controllers\Admin\MentorEarningsController::class, 'exportMentorPdf'])->name('mentor-earnings.export-detail');
+
         // Features Management
         Route::resource('features', FeatureController::class)->except(['show', 'create', 'edit']);
 

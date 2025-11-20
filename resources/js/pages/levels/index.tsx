@@ -98,7 +98,7 @@ export default function Index({ levels }: Props) {
 
     const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        createForm.post('/levels', {
+        createForm.post('/admin/levels', {
             forceFormData: true,
             onSuccess: () => {
                 toast.success('Level berhasil ditambahkan!');
@@ -116,8 +116,17 @@ export default function Index({ levels }: Props) {
         e.preventDefault();
         if (!selectedLevel) return;
 
-        editForm.put(`/levels/${selectedLevel.id}`, {
-            forceFormData: true,
+        editForm.transform((data) => {
+            const formData = new FormData();
+            formData.append('name', data.name);
+            if (data.image) {
+                formData.append('image', data.image);
+            }
+            formData.append('_method', 'PUT');
+            return formData as any;
+        });
+
+        editForm.post(`/admin/levels/${selectedLevel.id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Level berhasil diperbarui!');
@@ -134,7 +143,7 @@ export default function Index({ levels }: Props) {
     const handleDelete = () => {
         if (!selectedLevel) return;
 
-        router.delete(`/levels/${selectedLevel.id}`, {
+        router.delete(`/admin/levels/${selectedLevel.id}`, {
             onSuccess: () => {
                 toast.success('Level berhasil dihapus!');
                 setDeleteOpen(false);

@@ -5,6 +5,8 @@ namespace App\Application\Checkout;
 use App\Application\Enrollments\Services\EnrollmentService;
 use App\Models\Enrollment;
 use App\Models\Kelas;
+use App\Notifications\PaymentPaidNotification;
+use App\Notifications\PaymentPendingNotification;
 use App\Models\PromoCode;
 use App\Models\Setting;
 use App\Models\Transaction;
@@ -63,6 +65,11 @@ class CheckoutService
         $adminFee = $shouldApplyAdminFee ? round($baseTotal * $adminFeeRate) : 0.0;
         $grandTotal = $baseTotal + $adminFee;
 
+        // Calculate mentor earnings and platform fee
+        $mentorFeePercentage = $this->resolveMentorFeePercentage();
+        $platformFee = round($baseTotal * $mentorFeePercentage);
+        $mentorEarnings = $baseTotal - $platformFee;
+
         $invoiceNumber = Transaction::generateInvoiceNumber();
 
         $transaction = Transaction::create([
@@ -76,6 +83,8 @@ class CheckoutService
             'discount' => $discount,
             'total' => $grandTotal,
             'admin_fee' => $adminFee,
+            'mentor_earnings' => $mentorEarnings,
+            'platform_fee' => $platformFee,
             'status' => 'pending',
             'metadata' => [
                 'source' => 'inertia_checkout',
@@ -87,6 +96,12 @@ class CheckoutService
             $transaction->markAsPaid();
             $this->enrollmentService->enroll($user->id, $kelas->id);
             $transaction->refresh();
+
+            // Notify user about successful payment for cash method
+            $transaction->loadMissing(['user', 'kelas']);
+            if ($transaction->user && config('mail.notifications.payment_success_enabled', true)) {
+                $transaction->user->notify(new PaymentPaidNotification($transaction));
+            }
         } elseif ($paymentMethod === 'tripay') {
             $tripayResponse = $this->tripayService->createTransaction([
                 'method' => $paymentChannel,
@@ -134,9 +149,39 @@ class CheckoutService
             ]);
 
             $transaction->refresh();
+
+            // Notify user that payment is pending and provide payment link
+            $transaction->loadMissing(['user', 'kelas']);
+            if ($transaction->user && config('mail.notifications.payment_pending_enabled', true)) {
+                $transaction->user->notify(new PaymentPendingNotification($transaction));
+            }
         }
 
         return $transaction;
+    }
+
+    private function resolveMentorFeePercentage(): float
+    {
+        $fee = Setting::query()->value('mentor_fee_percentage');
+
+        if ($fee === null) {
+            return 0.10; // Default 10%
+        }
+
+        if (is_numeric($fee)) {
+            $numericFee = (float) $fee;
+        } else {
+            $normalized = preg_replace('/[^0-9,\.]/', '', (string) $fee);
+            if ($normalized === null) {
+                return 0.10;
+            }
+
+            $numericFee = str_contains($normalized, ',')
+                ? (float) str_replace(',', '.', $normalized)
+                : (float) $normalized;
+        }
+
+        return max(0.0, min(100.0, $numericFee)) / 100;
     }
 
     private function resolveAdminFeePercentage(): float

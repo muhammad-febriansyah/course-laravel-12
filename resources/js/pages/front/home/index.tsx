@@ -1,15 +1,16 @@
 import { HeroSpotlight } from '@/components/site/hero-spotlight';
+import { CategoryShowcaseSection } from '@/components/site/sections/category-showcase-section';
+import { CTASection } from '@/components/site/sections/cta-section';
+import { FaqPreviewSection } from '@/components/site/sections/faq-preview-section';
 import { FeaturesSection } from '@/components/site/sections/features-section';
+import { NewsPreviewSection } from '@/components/site/sections/news-preview-section';
+import { PopularCoursesSection } from '@/components/site/sections/popular-courses-section';
 import { StatsSection } from '@/components/site/sections/stats-section';
 import { TestimonialsMarqueeSection } from '@/components/site/sections/testimonials-marquee-section';
-import { CTASection } from '@/components/site/sections/cta-section';
-import { PopularCoursesSection } from '@/components/site/sections/popular-courses-section';
-import { CategoryShowcaseSection } from '@/components/site/sections/category-showcase-section';
-import { NewsPreviewSection } from '@/components/site/sections/news-preview-section';
-import { FaqPreviewSection } from '@/components/site/sections/faq-preview-section';
 import HomeLayout from '@/layouts/home-layout';
-import { usePage } from '@inertiajs/react';
 import type { Course } from '@/types/course';
+import type { PageProps } from '@/types';
+import { usePage } from '@inertiajs/react';
 
 interface Feature {
     id: number;
@@ -35,7 +36,7 @@ interface Stat {
     description: string;
 }
 
-interface HomePageProps {
+interface HomePageProps extends PageProps {
     features: Feature[];
     reviews: Review[];
     stats: Stat[];

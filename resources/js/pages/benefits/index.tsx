@@ -69,7 +69,7 @@ export default function Index({ benefits }: Props) {
 
     const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        createForm.post('/benefits', {
+        createForm.post('/admin/benefits', {
             onSuccess: () => {
                 toast.success('Benefit berhasil ditambahkan!');
                 setCreateOpen(false);
@@ -85,7 +85,7 @@ export default function Index({ benefits }: Props) {
         e.preventDefault();
         if (!selectedBenefit) return;
 
-        editForm.put(`/benefits/${selectedBenefit.id}`, {
+        editForm.put(`/admin/benefits/${selectedBenefit.id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Benefit berhasil diperbarui!');
@@ -101,7 +101,7 @@ export default function Index({ benefits }: Props) {
     const handleDelete = () => {
         if (!selectedBenefit) return;
 
-        router.delete(`/benefits/${selectedBenefit.id}`, {
+        router.delete(`/admin/benefits/${selectedBenefit.id}`, {
             onSuccess: () => {
                 toast.success('Benefit berhasil dihapus!');
                 setDeleteOpen(false);

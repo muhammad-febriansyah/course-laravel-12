@@ -4,7 +4,7 @@ export interface ManagedUser {
     email: string;
     phone?: string | null;
     address?: string | null;
-    role?: 'admin' | 'instructor' | 'student' | null;
+    role?: 'admin' | 'mentor' | 'user' | null;
     status: number;
     avatar?: string | null;
     createdAt?: string | null;

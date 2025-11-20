@@ -63,12 +63,8 @@ export default function QuizPage({
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Debug: Log quiz data
-    console.log('Quiz data received:', quizzes);
-    console.log('Current question index:', currentQuestionIndex);
 
     const currentQuestion = quizzes[currentQuestionIndex];
-    console.log('Current question:', currentQuestion);
-    console.log('Current question answers:', currentQuestion?.answers);
     const progress = ((currentQuestionIndex + 1) / quizzes.length) * 100;
     const isLastQuestion = currentQuestionIndex === quizzes.length - 1;
     const hasAnsweredCurrent = userAnswers[currentQuestion.id] !== undefined;

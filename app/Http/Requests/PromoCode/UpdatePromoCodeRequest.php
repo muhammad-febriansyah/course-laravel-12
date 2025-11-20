@@ -26,7 +26,7 @@ class UpdatePromoCodeRequest extends FormRequest
             ],
             'discount' => ['required', 'integer', 'between:0,100'],
             'status' => ['required', 'boolean'],
-            'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'image' => ['nullable', 'file', 'mimes:jpeg,png,jpg,webp,svg', 'max:2048'],
         ];
     }
 }

@@ -2,6 +2,7 @@ import {
     Award,
     BadgePercent,
     BookOpen,
+    DollarSign,
     FileQuestion,
     FileText,
     Gift,
@@ -27,6 +28,7 @@ import {
     TrendingUp,
     UserCircle,
     Users,
+    Wallet,
     type LucideIcon,
 } from 'lucide-react';
 
@@ -67,6 +69,10 @@ const menuIconMap: Record<string, LucideIcon> = {
     library: Library,
     'receipt-text': ReceiptText,
     'user-circle': UserCircle,
+    // Earnings/Money icons
+    attach_money: DollarSign,
+    payments: Wallet,
+    wallet: Wallet,
 };
 
 export const resolveMenuIcon = (icon?: string): LucideIcon => {

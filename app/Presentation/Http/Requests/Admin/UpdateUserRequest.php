@@ -26,7 +26,7 @@ class UpdateUserRequest extends FormRequest
             ],
             'phone' => ['nullable', 'string', 'max:30'],
             'address' => ['nullable', 'string', 'max:500'],
-            'role' => ['nullable', 'in:admin,instructor,student'],
+            'role' => ['nullable', 'in:admin,mentor,user'],
             'status' => ['required', 'integer', 'in:0,1'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'avatar' => ['nullable', 'image', 'max:2048'],

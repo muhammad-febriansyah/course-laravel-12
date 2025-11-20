@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Application\Enrollments\Services\EnrollmentService;
 use App\Models\Transaction;
+use App\Notifications\PaymentFailedNotification;
 use App\Services\TripayService;
 use App\Services\WhatsAppNotificationService;
 use App\Notifications\PaymentPaidNotification;
@@ -65,7 +66,7 @@ class TransactionController extends Controller
 
         // Notify user via email about successful payment
         $transaction->loadMissing(['user', 'kelas']);
-        if ($transaction->user) {
+        if ($transaction->user && config('mail.notifications.payment_success_enabled', true)) {
             $transaction->user->notify(new PaymentPaidNotification($transaction));
         }
 
@@ -87,6 +88,13 @@ class TransactionController extends Controller
             'status' => 'failed',
             'notes' => $request->notes ?? 'Ditolak oleh admin',
         ]);
+
+        // Notify user about failed payment (cash rejected by admin)
+        $transaction->loadMissing(['user', 'kelas']);
+        if ($transaction->user && config('mail.notifications.payment_failed_enabled', true)) {
+            $reason = $transaction->notes ?: 'Transaksi ditolak oleh admin.';
+            $transaction->user->notify(new PaymentFailedNotification($transaction, $reason));
+        }
 
         return back()->with('success', 'Transaksi berhasil di-reject!');
     }
@@ -110,6 +118,7 @@ class TransactionController extends Controller
         }
 
         $wasPaid = $transaction->isPaid();
+        $previousStatus = $transaction->status;
 
         $updatePayload = [
             'metadata' => $data,
@@ -126,15 +135,26 @@ class TransactionController extends Controller
 
         $transaction->update($updatePayload);
 
+        // Reload relations for notifications
+        $transaction->loadMissing(['user', 'kelas']);
+
         if ($data['status'] === 'PAID' && !$wasPaid) {
             $this->autoEnrollIfEligible($transaction);
             $this->whatsappNotificationService->sendClassPurchaseNotification($transaction);
 
              // Notify user via email about successful payment
-             $transaction->loadMissing(['user', 'kelas']);
-             if ($transaction->user) {
+             if ($transaction->user && config('mail.notifications.payment_success_enabled', true)) {
                  $transaction->user->notify(new PaymentPaidNotification($transaction));
              }
+        } elseif (in_array($data['status'], ['EXPIRED', 'FAILED'], true) && $transaction->user && $previousStatus !== strtolower($data['status'])) {
+            // Notify user about failed / expired payment
+            if (config('mail.notifications.payment_failed_enabled', true)) {
+                $reason = $data['status'] === 'EXPIRED'
+                    ? 'Pembayaran melewati batas waktu yang ditentukan.'
+                    : 'Pembayaran tidak berhasil diproses oleh penyedia pembayaran.';
+
+                $transaction->user->notify(new PaymentFailedNotification($transaction, $reason));
+            }
         }
 
         return response()->json(['success' => true]);

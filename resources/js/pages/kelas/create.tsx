@@ -402,7 +402,6 @@ export default function Create({
                     onSubmit={handleSubmit(
                         onSubmit,
                         (errors) => {
-                            console.log('Form validation failed:', errors);
 
                             // Find first error
                             const firstErrorField = Object.keys(errors)[0];

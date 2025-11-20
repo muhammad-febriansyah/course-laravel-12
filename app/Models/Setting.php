@@ -47,5 +47,6 @@ class Setting extends Model
         'stats_satisfaction_value',
         'stats_satisfaction_desc',
         'fee',
+        'mentor_fee_percentage',
     ];
 }

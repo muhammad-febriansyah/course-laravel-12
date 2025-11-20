@@ -160,14 +160,17 @@ export default function KelasIndex({
 
     const summary = useMemo(() => {
         if (!isMentor) return null;
-        const totalSales = filteredData.reduce((sum, item) => sum + (item.total_sales ?? 0), 0);
+        const totalSales = filteredData.reduce((sum, item) => {
+            const sales = Number(item.total_sales ?? 0);
+            return sum + sales;
+        }, 0);
         const totalRevenue = filteredData.reduce(
             (sum, item) => sum + Number(item.total_revenue ?? 0),
             0,
         );
         return {
             totalClass: filteredData.length,
-            totalSales,
+            totalSales: totalSales.toLocaleString('id-ID'),
             totalRevenue: formatCurrency(totalRevenue),
         };
     }, [filteredData, isMentor]);
@@ -333,15 +336,6 @@ export default function KelasIndex({
                 enableSorting: false,
                 cell: ({ row }) => (
                     <div className="flex flex-wrap gap-2">
-                        <Button
-                            size="sm"
-                            asChild
-                            className="bg-blue-600 text-white hover:bg-blue-700"
-                        >
-                            <Link href={`${basePath}/${row.original.id}`}>
-                                <Eye className="h-4 w-4" /> Detail
-                            </Link>
-                        </Button>
                         <Button
                             size="sm"
                             asChild

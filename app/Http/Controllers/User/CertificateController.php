@@ -7,6 +7,8 @@ use App\Models\Enrollment;
 use App\Models\Kelas;
 use App\Models\QuizAttempt;
 use App\Models\VideoProgress;
+use App\Services\ImageService;
+use App\Services\CertificateGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -14,6 +16,12 @@ use Inertia\Response;
 
 class CertificateController extends Controller
 {
+    public function __construct(
+        private readonly ImageService $imageService,
+        private readonly CertificateGeneratorService $certificateGeneratorService,
+    ) {
+    }
+
     public function index(Request $request): Response
     {
         $user = $request->user();
@@ -74,7 +82,7 @@ class CertificateController extends Controller
                 'id' => $kelas->id,
                 'title' => $kelas->title,
                 'slug' => $kelas->slug,
-                'thumbnail' => $kelas->image,
+                'thumbnail' => $this->imageService->url($kelas->image),
                 'instructor' => [
                     'name' => $kelas->user->name,
                 ],
@@ -126,21 +134,67 @@ class CertificateController extends Controller
                 ->with('error', 'Anda belum menyelesaikan kelas ini!');
         }
 
+        // Ensure certificate code exists
+        if (!$enrollment->certificate_code) {
+            $enrollment->update([
+                'certificate_code' => $this->generateCertificateCode(),
+                'certificate_issued_at' => now(),
+                'completed_at' => $enrollment->completed_at ?? now(),
+            ]);
+            $enrollment->refresh();
+        }
+
         // Get best quiz score
         $bestQuizAttempt = QuizAttempt::where('user_id', $user->id)
             ->where('kelas_id', $kelas->id)
             ->orderBy('score', 'desc')
             ->first();
 
-        // TODO: Generate PDF certificate
-        // For now, return a simple response
-        return response()->json([
-            'message' => 'Certificate download feature coming soon!',
-            'course' => $kelas->title,
-            'user' => $user->name,
-            'certificate_code' => $enrollment->certificate_code,
-            'score' => $bestQuizAttempt->score,
-            'completed_at' => $enrollment->updated_at->format('d F Y'),
+        // Use the latest active certificate template
+        $template = \App\Models\CertificateTemplate::latest()->first();
+
+        if (! $template) {
+            return redirect()
+                ->route('user.certificates.index')
+                ->with('error', 'Template sertifikat belum dikonfigurasi oleh admin.');
+        }
+
+        $data = [
+            'recipient_name' => $user->name,
+            'course_name' => $kelas->title,
+            'issue_date' => ($enrollment->certificate_issued_at ?? now())->format('d F Y'),
+            'certificate_id' => $enrollment->certificate_code,
+            'signature_name' => $kelas->user?->name ?? config('app.name', 'Skill UP'),
+        ];
+
+        try {
+            $relativePath = $this->certificateGeneratorService->generate($template, $data);
+        } catch (\Throwable $e) {
+            \Log::error('Certificate generation failed for enrollment', [
+                'enrollment_id' => $enrollment->id,
+                'user_id' => $user->id,
+                'kelas_id' => $kelas->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->route('user.certificates.index')
+                ->with('error', 'Gagal menghasilkan sertifikat. Silakan coba beberapa saat lagi.');
+        }
+
+        // $relativePath is relative to storage/app/public (e.g., certificates/generated/cert_xxx.pdf)
+        $fullPath = storage_path('app/public/' . $relativePath);
+
+        if (! file_exists($fullPath)) {
+            return redirect()
+                ->route('user.certificates.index')
+                ->with('error', 'File sertifikat tidak ditemukan.');
+        }
+
+        // Stream the generated PDF file to the browser
+        return response()->file($fullPath, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename=\"certificate-' . $kelas->slug . '.pdf\"',
         ]);
     }
 

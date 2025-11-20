@@ -113,4 +113,21 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Email Notification Toggles
+    |--------------------------------------------------------------------------
+    |
+    | These options allow you to enable/disable specific email notifications
+    | sent by the application. Set to false to disable a notification type.
+    |
+    */
+
+    'notifications' => [
+        'registration_enabled' => env('MAIL_REGISTRATION_ENABLED', true),
+        'payment_pending_enabled' => env('MAIL_PAYMENT_PENDING_ENABLED', true),
+        'payment_failed_enabled' => env('MAIL_PAYMENT_FAILED_ENABLED', true),
+        'payment_success_enabled' => env('MAIL_PAYMENT_SUCCESS_ENABLED', true),
+    ],
+
 ];

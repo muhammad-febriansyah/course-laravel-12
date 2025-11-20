@@ -116,7 +116,7 @@ export default function Index({ promoCodes }: Props) {
 
     const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        createForm.post('/promo-codes', {
+        createForm.post('/admin/promo-codes', {
             forceFormData: true,
             onSuccess: () => {
                 toast.success('Kode promo berhasil ditambahkan!');
@@ -134,8 +134,20 @@ export default function Index({ promoCodes }: Props) {
         e.preventDefault();
         if (!selectedPromoCode) return;
 
-        editForm.put(`/promo-codes/${selectedPromoCode.id}`, {
-            forceFormData: true,
+        editForm.transform((data) => {
+            const formData = new FormData();
+            formData.append('name', data.name);
+            formData.append('code', data.code);
+            formData.append('discount', data.discount);
+            formData.append('status', data.status);
+            if (data.image) {
+                formData.append('image', data.image);
+            }
+            formData.append('_method', 'PUT');
+            return formData as any;
+        });
+
+        editForm.post(`/admin/promo-codes/${selectedPromoCode.id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Kode promo berhasil diperbarui!');
@@ -152,7 +164,7 @@ export default function Index({ promoCodes }: Props) {
     const handleDelete = () => {
         if (!selectedPromoCode) return;
 
-        router.delete(`/promo-codes/${selectedPromoCode.id}`, {
+        router.delete(`/admin/promo-codes/${selectedPromoCode.id}`, {
             onSuccess: () => {
                 toast.success('Kode promo berhasil dihapus!');
                 setDeleteOpen(false);

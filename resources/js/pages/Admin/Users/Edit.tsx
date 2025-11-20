@@ -28,13 +28,13 @@ export default function EditUserPage({ user, roles }: EditUserPageProps) {
     };
 
     const handleSubmit = () => {
-        put(`/users/${user.id}`, { forceFormData: true });
+        put(`/admin/users/${user.id}`, { forceFormData: true });
     };
 
     const breadcrumbs = [
-        { title: 'Pengguna', href: '/users' },
-        { title: user.name, href: `/users/${user.id}` },
-        { title: 'Edit', href: `/users/${user.id}/edit` },
+        { title: 'Pengguna', href: '/admin/users' },
+        { title: user.name, href: `/admin/users/${user.id}` },
+        { title: 'Edit', href: `/admin/users/${user.id}/edit` },
     ];
 
     return (

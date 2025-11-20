@@ -68,4 +68,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Transaction::class);
     }
+
+    /**
+     * Get all classes created by this user (mentor)
+     */
+    public function kelas(): HasMany
+    {
+        return $this->hasMany(Kelas::class, 'user_id');
+    }
 }

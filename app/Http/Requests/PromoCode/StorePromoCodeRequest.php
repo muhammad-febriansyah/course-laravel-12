@@ -19,7 +19,7 @@ class StorePromoCodeRequest extends FormRequest
             'code' => ['required', 'string', 'max:100', Rule::unique('promo_codes', 'code')],
             'discount' => ['required', 'integer', 'between:0,100'],
             'status' => ['required', 'boolean'],
-            'image' => ['required', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
+            'image' => ['required', 'file', 'mimes:jpeg,png,jpg,webp,svg', 'max:2048'],
         ];
     }
 }

@@ -59,7 +59,7 @@ class UserController extends Controller
                 'role' => $role ?: null,
                 'status' => $status,
             ],
-            'roles' => ['admin', 'instructor', 'student'],
+            'roles' => ['admin', 'mentor', 'user'],
         ]);
     }
 
@@ -68,7 +68,7 @@ class UserController extends Controller
         $this->ensureAdmin($request);
 
         return Inertia::render('Admin/Users/Create', [
-            'roles' => ['admin', 'instructor', 'student'],
+            'roles' => ['admin', 'mentor', 'user'],
         ]);
     }
 
@@ -85,7 +85,7 @@ class UserController extends Controller
 
         $user = $this->service->create($data);
 
-        return Redirect::route('users.show', $user)->with('success', 'Pengguna berhasil dibuat.');
+        return Redirect::route('admin.users.show', $user)->with('success', 'Pengguna berhasil dibuat.');
     }
 
     public function show(Request $request, User $user): Response
@@ -111,7 +111,7 @@ class UserController extends Controller
 
         return Inertia::render('Admin/Users/Edit', [
             'user' => UserResource::make($user)->resolve($request),
-            'roles' => ['admin', 'instructor', 'student'],
+            'roles' => ['admin', 'mentor', 'user'],
         ]);
     }
 
@@ -135,7 +135,7 @@ class UserController extends Controller
 
         $this->service->update($user, $data);
 
-        return Redirect::route('users.show', $user)->with('success', 'Pengguna berhasil diperbarui.');
+        return Redirect::route('admin.users.show', $user)->with('success', 'Pengguna berhasil diperbarui.');
     }
 
     public function destroy(Request $request, User $user): RedirectResponse
@@ -150,7 +150,7 @@ class UserController extends Controller
 
         $this->service->delete($user);
 
-        return Redirect::route('users.index')->with('success', 'Pengguna berhasil dihapus.');
+        return Redirect::route('admin.users.index')->with('success', 'Pengguna berhasil dihapus.');
     }
 
     private function ensureAdmin(Request $request): void

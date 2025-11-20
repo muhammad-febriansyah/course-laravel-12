@@ -67,6 +67,7 @@ class SettingController extends Controller
             'hero_active_label' => 'nullable|string|max:100',
             'hero_active_value' => 'nullable|string|max:100',
             'fee' => 'required|numeric|min:0|max:100',
+            'mentor_fee_percentage' => 'required|numeric|min:0|max:100',
         ]);
 
         $setting = Setting::first();

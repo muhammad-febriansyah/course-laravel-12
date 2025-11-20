@@ -32,7 +32,7 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+            'email' => 'required|string|lowercase|email|max:255|unique:' . User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'phone' => 'required|string|max:20',
             'address' => 'required|string|max:500',
@@ -44,14 +44,14 @@ class RegisteredUserController extends Controller
             'password' => $request->password,
             'phone' => $request->phone,
             'address' => $request->address,
-            // Default role for public registration
-            'role' => $request->input('role', 'student'),
+            'role' => $request->input('role', 'user'),
         ]);
 
         event(new Registered($user));
 
-        // Send welcome email notification
-        $user->notify(new UserRegisteredNotification());
+        if (config('mail.notifications.registration_enabled', true)) {
+            $user->notify(new UserRegisteredNotification());
+        }
 
         Auth::login($user);
 

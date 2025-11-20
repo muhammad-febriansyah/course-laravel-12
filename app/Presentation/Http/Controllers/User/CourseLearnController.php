@@ -22,6 +22,8 @@ class CourseLearnController extends Controller
     {
         $user = $request->user();
 
+        $autoPlayVideoId = (int) $request->session()->get('autoPlayVideoId', 0) ?: null;
+
         // Get the course
         $kelas = Kelas::query()
             ->with([
@@ -79,13 +81,15 @@ class CourseLearnController extends Controller
             ->keyBy('video_id');
 
         // Transform sections and videos
-        $sections = $kelas->sections->map(function ($section) use ($videoProgress) {
+        $selectedInitialVideo = null;
+
+        $sections = $kelas->sections->map(function ($section) use ($videoProgress, $autoPlayVideoId, &$selectedInitialVideo) {
             return [
                 'id' => $section->id,
                 'title' => $section->title,
-                'videos' => $section->videos->map(function ($video) use ($videoProgress) {
+                'videos' => $section->videos->map(function ($video) use ($videoProgress, $autoPlayVideoId, &$selectedInitialVideo) {
                     $progress = $videoProgress->get($video->id);
-                    return [
+                    $transformed = [
                         'id' => $video->id,
                         'title' => $video->title,
                         'slug' => $video->slug,
@@ -95,15 +99,23 @@ class CourseLearnController extends Controller
                         'watchDuration' => $progress ? $progress->watch_duration : 0,
                         'lastWatchedAt' => $progress ? $progress->last_watched_at?->toISOString() : null,
                     ];
+
+                    // Determine initial selected video:
+                    // - Prefer the one set via autoPlayVideoId (next video after marking complete)
+                    // - Fallback to the very first video in the course
+                    if ($autoPlayVideoId && $video->id === $autoPlayVideoId) {
+                        $selectedInitialVideo = $transformed;
+                    } elseif ($selectedInitialVideo === null) {
+                        $selectedInitialVideo = $transformed;
+                    }
+
+                    return $transformed;
                 })->values(),
             ];
         })->values();
 
-        // Get first video if exists
-        $firstVideo = null;
-        if ($sections->isNotEmpty() && $sections[0]['videos']->isNotEmpty()) {
-            $firstVideo = $sections[0]['videos'][0];
-        }
+        // Use selectedInitialVideo if available
+        $firstVideo = $selectedInitialVideo;
 
         return Inertia::render('user/learn/course', [
             'course' => $courseData,

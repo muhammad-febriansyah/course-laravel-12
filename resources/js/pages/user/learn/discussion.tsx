@@ -6,8 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
-import user from '@/routes/user';
+import { Head, Link, useForm } from '@inertiajs/react';
+import userRoutes from '@/routes/user';
 import { toast } from 'sonner';
 import {
     ArrowLeft,
@@ -16,7 +16,7 @@ import {
     ImagePlus,
     X,
     CheckCircle2,
-    User
+    User as UserIcon,
 } from 'lucide-react';
 import { useState, useRef } from 'react';
 
@@ -61,17 +61,16 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            setSelectedImage(file);
-            setData('image', file);
+        if (!file) return;
 
-            // Create preview
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result as string);
-            };
-            reader.readAsDataURL(file);
-        }
+        setSelectedImage(file);
+        setData('image', file);
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
     };
 
     const removeImage = () => {
@@ -86,7 +85,7 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        post(user.discussion.store.url(course.slug), {
+        post(userRoutes.discussion.store.url(course.slug), {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Diskusi berhasil dibuat!');
@@ -105,7 +104,7 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
 
             <div className="min-h-screen bg-slate-50">
                 {/* Header */}
-                <header className="sticky top-0 z-20 border-b bg-white">
+                <header className="sticky top-0 z-20 border-b bg-white/90 backdrop-blur">
                     <div className="container mx-auto flex items-center justify-between gap-4 px-4 py-3 lg:px-6 lg:py-4">
                         <div className="flex min-w-0 flex-1 items-center gap-2 lg:gap-4">
                             <Button
@@ -114,7 +113,7 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
                                 asChild
                                 className="shrink-0 text-slate-600 hover:text-slate-900"
                             >
-                                <Link href={user.learn.course.url(course.slug)}>
+                                <Link href={userRoutes.learn.course.url(course.slug)}>
                                     <ArrowLeft className="h-4 w-4 lg:mr-2" />
                                     <span className="hidden lg:inline">Kembali ke Kelas</span>
                                 </Link>
@@ -126,6 +125,9 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
                                 <h1 className="truncate text-sm font-semibold leading-tight text-slate-900 lg:text-base">
                                     Diskusi - {course.title}
                                 </h1>
+                                <p className="hidden text-xs text-slate-500 sm:block">
+                                    Tanyakan sesuatu atau mulai diskusi dengan mentor dan peserta lain.
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -133,112 +135,127 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
 
                 {/* Main Content */}
                 <main className="container mx-auto px-4 py-6 lg:px-6 lg:py-8">
-                    <div className="mx-auto max-w-4xl space-y-6">
+                    <div className="grid gap-6 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,3fr)]">
                         {/* Create Discussion Form */}
-                        <Card>
-                            <CardHeader>
-                                <h2 className="text-lg font-semibold text-slate-900">Buat Diskusi Baru</h2>
-                                <p className="text-sm text-muted-foreground">
-                                    Tanyakan sesuatu atau mulai diskusi dengan mentor dan peserta lain
-                                </p>
-                            </CardHeader>
-                            <CardContent>
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="title">Judul Diskusi</Label>
-                                        <Input
-                                            id="title"
-                                            placeholder="Tulis judul diskusi..."
-                                            value={data.title}
-                                            onChange={(e) => setData('title', e.target.value)}
-                                            className={cn(errors.title && 'border-red-500')}
-                                        />
-                                        {errors.title && (
-                                            <p className="text-sm text-red-500">{errors.title}</p>
-                                        )}
+                        <section className="space-y-4">
+                            <Card className="border border-slate-200/80 shadow-sm">
+                                <CardHeader className="border-b bg-slate-50/70">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                                            <MessageCircle className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <h2 className="text-base font-semibold text-slate-900 lg:text-lg">
+                                                Buat Diskusi Baru
+                                            </h2>
+                                            <p className="text-xs text-muted-foreground lg:text-sm">
+                                                Ajukan pertanyaan, mulai topik baru, atau minta klarifikasi materi.
+                                            </p>
+                                        </div>
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="content">Pesan</Label>
-                                        <Textarea
-                                            id="content"
-                                            placeholder="Tulis pertanyaan atau diskusi..."
-                                            rows={5}
-                                            value={data.content}
-                                            onChange={(e) => setData('content', e.target.value)}
-                                            className={cn(errors.content && 'border-red-500')}
-                                        />
-                                        {errors.content && (
-                                            <p className="text-sm text-red-500">{errors.content}</p>
-                                        )}
-                                    </div>
-
-                                    {/* Image Upload */}
-                                    <div className="space-y-2">
-                                        <Label>Gambar (Opsional)</Label>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept="image/*"
-                                                onChange={handleImageSelect}
-                                                className="hidden"
+                                </CardHeader>
+                                <CardContent>
+                                    <form onSubmit={handleSubmit} className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="title">Judul Diskusi</Label>
+                                            <Input
+                                                id="title"
+                                                placeholder="Tulis judul diskusi..."
+                                                value={data.title}
+                                                onChange={(e) => setData('title', e.target.value)}
+                                                className={cn(errors.title && 'border-red-500')}
                                             />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => fileInputRef.current?.click()}
-                                            >
-                                                <ImagePlus className="mr-2 h-4 w-4" />
-                                                Pilih Gambar
-                                            </Button>
-                                            {selectedImage && (
-                                                <span className="text-sm text-muted-foreground">
-                                                    {selectedImage.name}
-                                                </span>
+                                            {errors.title && (
+                                                <p className="text-sm text-red-500">{errors.title}</p>
                                             )}
                                         </div>
-                                        {errors.image && (
-                                            <p className="text-sm text-red-500">{errors.image}</p>
-                                        )}
 
-                                        {/* Image Preview */}
-                                        {imagePreview && (
-                                            <div className="relative inline-block">
-                                                <img
-                                                    src={imagePreview}
-                                                    alt="Preview"
-                                                    className="h-32 w-auto rounded-lg border object-cover"
+                                        <div className="space-y-2">
+                                            <Label htmlFor="content">Pesan</Label>
+                                            <Textarea
+                                                id="content"
+                                                placeholder="Tulis pertanyaan atau diskusi..."
+                                                rows={5}
+                                                value={data.content}
+                                                onChange={(e) => setData('content', e.target.value)}
+                                                className={cn(errors.content && 'border-red-500')}
+                                            />
+                                            {errors.content && (
+                                                <p className="text-sm text-red-500">{errors.content}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Image Upload */}
+                                        <div className="space-y-2">
+                                            <Label>Gambar (Opsional)</Label>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={handleImageSelect}
+                                                    className="hidden"
                                                 />
                                                 <Button
                                                     type="button"
-                                                    variant="destructive"
-                                                    size="icon"
-                                                    className="absolute -right-2 -top-2 h-6 w-6 rounded-full"
-                                                    onClick={removeImage}
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => fileInputRef.current?.click()}
                                                 >
-                                                    <X className="h-3 w-3" />
+                                                    <ImagePlus className="mr-2 h-4 w-4" />
+                                                    Pilih Gambar
                                                 </Button>
+                                                {selectedImage && (
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {selectedImage.name}
+                                                    </span>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
+                                            {errors.image && (
+                                                <p className="text-sm text-red-500">{errors.image}</p>
+                                            )}
 
-                                    <div className="flex justify-end">
-                                        <Button type="submit" disabled={processing}>
-                                            <Send className="mr-2 h-4 w-4" />
-                                            Kirim Diskusi
-                                        </Button>
-                                    </div>
-                                </form>
-                            </CardContent>
-                        </Card>
+                                            {imagePreview && (
+                                                <div className="relative inline-block">
+                                                    <img
+                                                        src={imagePreview}
+                                                        alt="Preview"
+                                                        className="h-32 w-auto rounded-lg border object-cover"
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        variant="destructive"
+                                                        size="icon"
+                                                        className="absolute -right-2 -top-2 h-6 w-6 rounded-full"
+                                                        onClick={removeImage}
+                                                    >
+                                                        <X className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex justify-end">
+                                            <Button type="submit" disabled={processing}>
+                                                <Send className="mr-2 h-4 w-4" />
+                                                Kirim Diskusi
+                                            </Button>
+                                        </div>
+                                    </form>
+                                </CardContent>
+                            </Card>
+                        </section>
 
                         {/* Discussions List */}
-                        <div className="space-y-4">
-                            <h2 className="text-lg font-semibold text-slate-900">
-                                Semua Diskusi ({discussions.length})
-                            </h2>
+                        <section className="space-y-4">
+                            <div>
+                                <h2 className="text-base font-semibold text-slate-900 lg:text-lg">
+                                    Semua Diskusi ({discussions.length})
+                                </h2>
+                                <p className="text-xs text-muted-foreground lg:text-sm">
+                                    Lihat dan ikuti diskusi yang sudah ada.
+                                </p>
+                            </div>
 
                             {discussions.length === 0 ? (
                                 <Card>
@@ -251,7 +268,10 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
                                 </Card>
                             ) : (
                                 discussions.map((discussion) => (
-                                    <Card key={discussion.id} className="hover:shadow-md transition-shadow">
+                                    <Card
+                                        key={discussion.id}
+                                        className="transition-shadow hover:shadow-md"
+                                    >
                                         <CardContent className="p-6">
                                             <div className="space-y-4">
                                                 {/* User Info */}
@@ -265,7 +285,7 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
                                                                     className="h-full w-full rounded-full object-cover"
                                                                 />
                                                             ) : (
-                                                                <User className="h-5 w-5 text-primary" />
+                                                                <UserIcon className="h-5 w-5 text-primary" />
                                                             )}
                                                         </div>
                                                         <div>
@@ -292,7 +312,7 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
                                                 </h3>
 
                                                 {/* Content */}
-                                                <p className="text-slate-700 whitespace-pre-wrap">
+                                                <p className="whitespace-pre-wrap text-slate-700">
                                                     {discussion.content}
                                                 </p>
 
@@ -300,7 +320,7 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
                                                 {discussion.image && (
                                                     <img
                                                         src={discussion.image}
-                                                        alt="Discussion attachment"
+                                                        alt="Lampiran diskusi"
                                                         className="max-h-64 w-auto rounded-lg border object-cover"
                                                     />
                                                 )}
@@ -321,10 +341,11 @@ export default function DiscussionPage({ course, discussions }: DiscussionPagePr
                                     </Card>
                                 ))
                             )}
-                        </div>
+                        </section>
                     </div>
                 </main>
             </div>
         </>
     );
 }
+

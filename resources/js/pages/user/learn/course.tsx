@@ -131,14 +131,11 @@ export default function CourseLearnPage({
 
         // Find next video before making request
         const nextVideo = findNextVideo(selectedVideo);
-        console.log('Current video:', selectedVideo.title);
-        console.log('Next video found:', nextVideo?.title || 'None (last video)');
 
         router.post(`/dashboard/videos/${selectedVideo.id}/complete`, {}, {
             preserveScroll: true,
             preserveState: false,
             onSuccess: (page) => {
-                console.log('Mark complete success!');
                 toast.success('Video berhasil ditandai selesai!');
 
                 // Check if all videos are now completed
@@ -148,14 +145,9 @@ export default function CourseLearnPage({
                 const totalVideos = allVideos.length;
                 const allCompleted = completedCount === totalVideos;
 
-                console.log('Completed videos:', completedCount, '/', totalVideos);
-                console.log('All completed?', allCompleted);
-                console.log('Has next video?', !!nextVideo);
-
                 // Auto-play next video if exists
                 if (nextVideo) {
                     setTimeout(() => {
-                        console.log('Switching to next video:', nextVideo.title);
                         setSelectedVideo(nextVideo);
 
                         // Scroll to top smoothly
@@ -169,15 +161,12 @@ export default function CourseLearnPage({
                     }, 500);
                 } else {
                     // This is the last video
-                    console.log('Last video marked complete!');
-
                     if (allCompleted) {
-                        console.log('All videos completed! Quiz button will now appear.');
+                        // All videos completed: quiz button / completion UI already reacts to updated props
                     }
                 }
             },
             onError: (errors) => {
-                console.error('Error marking complete:', errors);
                 toast.error('Gagal menandai video selesai!');
             },
         });

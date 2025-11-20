@@ -23,6 +23,8 @@ class Transaction extends Model
         'discount',
         'total',
         'admin_fee',
+        'mentor_earnings',
+        'platform_fee',
         'tripay_reference',
         'tripay_merchant_ref',
         'payment_url',
@@ -39,6 +41,8 @@ class Transaction extends Model
         'discount' => 'decimal:2',
         'total' => 'decimal:2',
         'admin_fee' => 'decimal:2',
+        'mentor_earnings' => 'decimal:2',
+        'platform_fee' => 'decimal:2',
         'paid_at' => 'datetime',
         'expired_at' => 'datetime',
         'metadata' => 'array',
@@ -69,7 +73,7 @@ class Transaction extends Model
 
     public function scopePaid($query)
     {
-        return $query->where('status', 'paid');
+        return $query->whereNotNull('paid_at');
     }
 
     public function scopeExpired($query)
@@ -85,7 +89,7 @@ class Transaction extends Model
 
     public function isPaid(): bool
     {
-        return $this->status === 'paid';
+        return $this->paid_at !== null;
     }
 
     public function isExpired(): bool

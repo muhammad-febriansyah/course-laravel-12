@@ -20,8 +20,8 @@ export default function UserLogin({ status, canResetPassword }: { status?: strin
   const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '';
 
   return (
-    <AuthLayout title="Masuk Pengguna" description="Login sebagai pengguna (student)">
-      <Head title="User Login" />
+    <AuthLayout title="Masuk ke Akun Anda" description="Masukkan email dan kata sandi Anda di bawah ini untuk masuk ke akun Anda">
+      <Head title="Login" />
       <Form {...store.form()} resetOnSuccess={["password"]} className="flex flex-col gap-6">
         {({ processing, errors }) => (
           <>

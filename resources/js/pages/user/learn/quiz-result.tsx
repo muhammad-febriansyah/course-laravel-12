@@ -105,12 +105,12 @@ export default function QuizResultPage({
                 <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
                     <div className="space-y-6">
                         {/* Result Card */}
-                        <Card className="border-2 overflow-hidden">
-                            <CardContent className="p-6 sm:p-8 lg:p-12">
+                        <Card className="overflow-hidden rounded-3xl border border-slate-200/80 bg-white/90 shadow-xl backdrop-blur">
+                            <CardContent className="p-6 sm:p-8 lg:p-10">
                                 <div className="space-y-8">
                                     {/* Icon & Status */}
                                     <div className="text-center">
-                                        <div className={`mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full ${gradeInfo.bg} ${gradeInfo.border} border-4`}>
+                                        <div className={`mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border-4 ${gradeInfo.bg} ${gradeInfo.border} sm:h-24 sm:w-24`}>
                                             {isPassing ? (
                                                 <Trophy className={`h-12 w-12 ${gradeInfo.color}`} />
                                             ) : (
@@ -133,9 +133,9 @@ export default function QuizResultPage({
                                     <div className="space-y-6">
                                         {/* Main Score */}
                                         <div className="text-center">
-                                            <div className={`mx-auto mb-4 inline-flex items-center gap-4 rounded-2xl ${gradeInfo.bg} px-8 py-6 shadow-lg border-2 ${gradeInfo.border}`}>
+                                            <div className={`mx-auto mb-4 inline-flex items-center gap-4 rounded-2xl border-2 px-6 py-5 shadow-lg ${gradeInfo.bg} ${gradeInfo.border} sm:px-8 sm:py-6`}>
                                                 <div className="text-center">
-                                                    <span className={`block text-6xl font-bold ${gradeInfo.color} sm:text-7xl`}>
+                                                    <span className={`block text-5xl font-bold ${gradeInfo.color} sm:text-6xl md:text-7xl`}>
                                                         {attempt.score}
                                                     </span>
                                                     <div className="mt-1">
@@ -153,8 +153,8 @@ export default function QuizResultPage({
                                                 </Badge>
                                             )}
 
-                                            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-                                                <div className={`flex items-center gap-2 rounded-xl ${gradeInfo.bg} border-2 ${gradeInfo.border} px-5 py-3`}>
+                                            <div className="mt-4 flex flex-wrap items-stretch justify-center gap-3">
+                                                <div className={`flex min-w-[9rem] flex-col justify-center rounded-xl border-2 px-4 py-3 text-center ${gradeInfo.bg} ${gradeInfo.border} sm:min-w-[10rem]`}>
                                                     <div>
                                                         <p className="text-xs font-medium text-slate-600">Persentase</p>
                                                         <p className={`text-2xl font-bold ${gradeInfo.color}`}>
@@ -162,7 +162,7 @@ export default function QuizResultPage({
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className={`flex items-center gap-2 rounded-xl ${gradeInfo.bg} border-2 ${gradeInfo.border} px-5 py-3`}>
+                                                <div className={`flex min-w-[9rem] flex-col justify-center rounded-xl border-2 px-4 py-3 text-center ${gradeInfo.bg} ${gradeInfo.border} sm:min-w-[10rem]`}>
                                                     <div>
                                                         <p className="text-xs font-medium text-slate-600">Nilai</p>
                                                         <p className={`text-2xl font-bold ${gradeInfo.color}`}>
@@ -170,7 +170,7 @@ export default function QuizResultPage({
                                                         </p>
                                                     </div>
                                                 </div>
-                                                <div className={`flex items-center gap-2 rounded-xl ${gradeInfo.bg} border-2 ${gradeInfo.border} px-5 py-3`}>
+                                                <div className={`flex min-w-[9rem] flex-col justify-center rounded-xl border-2 px-4 py-3 text-center ${gradeInfo.bg} ${gradeInfo.border} sm:min-w-[10rem]`}>
                                                     <div>
                                                         <p className="text-xs font-medium text-slate-600">Benar</p>
                                                         <p className={`text-2xl font-bold ${gradeInfo.color}`}>
@@ -182,7 +182,7 @@ export default function QuizResultPage({
                                         </div>
 
                                         {/* Details */}
-                                        <div className="grid gap-4 sm:grid-cols-2">
+                                        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                                             <div className="rounded-xl border border-slate-200 bg-white p-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">

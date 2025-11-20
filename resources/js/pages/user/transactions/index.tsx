@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DataTable } from '@/components/ui/data-table';
 import AppLayout from '@/layouts/app-layout';
@@ -44,7 +45,7 @@ export default function TransactionPage({ transactions }: TransactionPageProps) 
                 header: 'No. Invoice',
                 cell: ({ row }) => (
                     <Link
-                        href={`/dashboard/transactions/${row.original.id}`}
+                        href={route('user.transactions.show', { transaction: row.original.id })}
                         className="font-semibold text-[#2547F9] hover:underline"
                         prefetch
                     >
@@ -101,6 +102,19 @@ export default function TransactionPage({ transactions }: TransactionPageProps) 
                 header: 'Total',
                 cell: ({ row }) => (
                     <div className="text-right font-semibold">{formatCurrency(row.original.total)}</div>
+                ),
+            },
+            {
+                id: 'actions',
+                header: 'Aksi',
+                cell: ({ row }) => (
+                    <div className="flex justify-end">
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href={route('user.transactions.show', { transaction: row.original.id })} prefetch>
+                                Lihat Detail
+                            </Link>
+                        </Button>
+                    </div>
                 ),
             },
         ];

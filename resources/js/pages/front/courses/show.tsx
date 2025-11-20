@@ -221,8 +221,7 @@ export default function CourseDetailPage({
     const isAuthenticated = Boolean(page.props.auth?.user);
     const isEnrolled = course.isEnrolled ?? false;
     const previewLimit = Math.max(course.previewLimit ?? 0, 0);
-    const shouldLimitPreview =
-        isAuthenticated && !isEnrolled && previewLimit > 0;
+    const shouldLimitPreview = !isEnrolled && previewLimit > 0;
     const relatedCount = relatedCourses.length;
 
     const tabItems = useMemo(

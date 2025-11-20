@@ -53,6 +53,7 @@ interface Setting {
     stats_satisfaction_value: string | null;
     stats_satisfaction_desc: string | null;
     fee: string;
+    mentor_fee_percentage: string;
 }
 
 interface Props {
@@ -108,6 +109,7 @@ export default function WebsiteSettings({ setting }: Props) {
         stats_satisfaction_value: setting?.stats_satisfaction_value ?? '',
         stats_satisfaction_desc: setting?.stats_satisfaction_desc ?? '',
         fee: setting?.fee ?? '',
+        mentor_fee_percentage: setting?.mentor_fee_percentage ?? '10',
     });
 
     const [logoPreview, setLogoPreview] = useState<string | null>(setting?.logo ?? null);
@@ -798,7 +800,7 @@ export default function WebsiteSettings({ setting }: Props) {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label htmlFor="fee">Biaya Platform (%)</Label>
+                                        <Label htmlFor="fee">Biaya Admin Tripay (%)</Label>
                                         <Input
                                             id="fee"
                                             type="number"
@@ -809,9 +811,26 @@ export default function WebsiteSettings({ setting }: Props) {
                                             onChange={(event) => setData('fee', event.target.value)}
                                         />
                                         <p className="text-sm text-muted-foreground">
-                                            Persentase biaya yang dikenakan platform pada setiap transaksi.
+                                            Persentase biaya admin yang dikenakan untuk pembayaran via Tripay.
                                         </p>
                                         {errors.fee && <p className="text-sm text-red-500">{errors.fee}</p>}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="mentor_fee_percentage">Fee Platform dari Pendapatan Mentor (%)</Label>
+                                        <Input
+                                            id="mentor_fee_percentage"
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            step="0.01"
+                                            value={data.mentor_fee_percentage}
+                                            onChange={(event) => setData('mentor_fee_percentage', event.target.value)}
+                                        />
+                                        <p className="text-sm text-muted-foreground">
+                                            Persentase fee yang diambil platform dari setiap penjualan kelas mentor. Contoh: 10% = platform dapat 10%, mentor dapat 90%.
+                                        </p>
+                                        {errors.mentor_fee_percentage && <p className="text-sm text-red-500">{errors.mentor_fee_percentage}</p>}
                                     </div>
                                 </TabsContent>
                             </Tabs>

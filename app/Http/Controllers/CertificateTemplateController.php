@@ -91,8 +91,8 @@ class CertificateTemplateController extends Controller
 
         try {
             $certificatePath = $this->certificateGeneratorService->generate($certificate, $sampleData);
-            // $certificatePath is already a path like /certificates/generated/cert_xxx.pdf
-            $url = url($certificatePath);
+            // $certificatePath is relative to storage/app/public (e.g., certificates/generated/cert_xxx.pdf)
+            $url = \Storage::url($certificatePath);
 
             return response()->json([
                 'success' => true,

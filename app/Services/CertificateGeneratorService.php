@@ -17,9 +17,17 @@ class CertificateGeneratorService
      */
     public function generate(CertificateTemplate $template, array $data): string
     {
-        // Background image is stored in public/ directory directly (not storage/app/public)
-        // Path in database is like: /images/certificates/certificate_xxx.pdf
-        $backgroundPath = public_path($template->background_image);
+        // Background image is stored in storage/app/public
+        // Path in database is like: certificates/certificate_xxx.pdf or categories/category_xxx.jpg
+        // First try storage path, then fallback to public path for backward compatibility
+        $storagePath = storage_path('app/public/' . $template->background_image);
+
+        if (file_exists($storagePath)) {
+            $backgroundPath = $storagePath;
+        } else {
+            // Fallback to public path for old files
+            $backgroundPath = public_path($template->background_image);
+        }
 
         // Check if file exists
         if (!file_exists($backgroundPath)) {
@@ -62,10 +70,10 @@ class CertificateGeneratorService
             $this->addTextField($pdf, $field, $data, $size['width'], $size['height']);
         }
 
-        // Save the generated PDF in public directory
+        // Save the generated PDF in storage directory
         $filename = uniqid('cert_', true) . '.pdf';
-        $outputPath = '/certificates/generated/' . $filename;
-        $fullPath = public_path($outputPath);
+        $relativePath = 'certificates/generated/' . $filename;
+        $fullPath = storage_path('app/public/' . $relativePath);
 
         // Ensure directory exists
         $directory = dirname($fullPath);
@@ -75,7 +83,8 @@ class CertificateGeneratorService
 
         $pdf->Output('F', $fullPath);
 
-        return $outputPath;
+        // Return path relative to storage/app/public for use with Storage::url()
+        return $relativePath;
     }
 
     /**
@@ -104,10 +113,10 @@ class CertificateGeneratorService
             $this->addTextField($pdf, $field, $data, $width, $height);
         }
 
-        // Save the generated PDF in public directory
+        // Save the generated PDF in storage directory
         $filename = uniqid('cert_', true) . '.pdf';
-        $outputPath = '/certificates/generated/' . $filename;
-        $fullPath = public_path($outputPath);
+        $relativePath = 'certificates/generated/' . $filename;
+        $fullPath = storage_path('app/public/' . $relativePath);
 
         // Ensure directory exists
         $directory = dirname($fullPath);
@@ -117,7 +126,8 @@ class CertificateGeneratorService
 
         $pdf->Output('F', $fullPath);
 
-        return $outputPath;
+        // Return path relative to storage/app/public for use with Storage::url()
+        return $relativePath;
     }
 
     /**

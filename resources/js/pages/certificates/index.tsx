@@ -110,8 +110,14 @@ export default function CertificatesIndex({ templates }: Props) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN':
+                        document
+                            .querySelector('meta[name="csrf-token"]')
+                            ?.getAttribute('content') || '',
+                    'X-Requested-With': 'XMLHttpRequest',
                 },
+                credentials: 'same-origin',
             });
 
             const data = await response.json();

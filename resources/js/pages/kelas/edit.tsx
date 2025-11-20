@@ -367,8 +367,6 @@ export default function Edit({
     };
 
     const onSubmit = (data: KelasFormData) => {
-        console.log('Form submitted with data:', data);
-        console.log('Form errors:', errors);
         const formData = new FormData();
         formData.append('_method', 'PUT');
 
@@ -504,7 +502,6 @@ export default function Edit({
                     onSubmit={handleSubmit(
                         onSubmit,
                         (errors) => {
-                            console.log('Form validation failed:', errors);
 
                             // Find first error
                             const firstErrorField = Object.keys(errors)[0];

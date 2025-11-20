@@ -99,7 +99,7 @@ export default function Index({ types }: Props) {
 
     const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        createForm.post('/types', {
+        createForm.post('/admin/types', {
             forceFormData: true,
             onSuccess: () => {
                 toast.success('Tipe kelas berhasil ditambahkan!');
@@ -117,8 +117,17 @@ export default function Index({ types }: Props) {
         e.preventDefault();
         if (!selectedType) return;
 
-        editForm.put(`/types/${selectedType.id}`, {
-            forceFormData: true,
+        editForm.transform((data) => {
+            const formData = new FormData();
+            formData.append('name', data.name);
+            if (data.image) {
+                formData.append('image', data.image);
+            }
+            formData.append('_method', 'PUT');
+            return formData as any;
+        });
+
+        editForm.post(`/admin/types/${selectedType.id}`, {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success('Tipe kelas berhasil diperbarui!');
@@ -135,7 +144,7 @@ export default function Index({ types }: Props) {
     const handleDelete = () => {
         if (!selectedType) return;
 
-        router.delete(`/types/${selectedType.id}`, {
+        router.delete(`/admin/types/${selectedType.id}`, {
             onSuccess: () => {
                 toast.success('Tipe kelas berhasil dihapus!');
                 setDeleteOpen(false);
