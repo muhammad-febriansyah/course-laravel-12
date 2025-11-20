@@ -19,7 +19,7 @@ class UpdateCertificateTemplateRequest extends FormRequest
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:500'],
             'background_image' => ['nullable', 'file', 'mimes:jpeg,png,jpg,webp,pdf', 'max:8192'],
-            'is_active' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', Rule::in(['0', '1', 0, 1, true, false])],
             'layout' => ['nullable', 'array'],
             'layout.*.key' => ['required', 'string', 'max:100'],
             'layout.*.label' => ['required', 'string', 'max:150'],

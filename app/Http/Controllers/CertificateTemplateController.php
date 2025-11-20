@@ -49,6 +49,11 @@ class CertificateTemplateController extends Controller
         $data = $request->validated();
         $data['background_image'] = $request->file('background_image');
 
+        // Decode layout if it's a JSON string (from FormData)
+        if (isset($data['layout']) && is_string($data['layout'])) {
+            $data['layout'] = json_decode($data['layout'], true);
+        }
+
         $this->certificateTemplateService->create($data);
 
         return redirect()
@@ -60,6 +65,11 @@ class CertificateTemplateController extends Controller
     {
         $data = $request->validated();
         $data['background_image'] = $request->file('background_image', $certificate->background_image);
+
+        // Decode layout if it's a JSON string (from FormData)
+        if (isset($data['layout']) && is_string($data['layout'])) {
+            $data['layout'] = json_decode($data['layout'], true);
+        }
 
         $this->certificateTemplateService->update($certificate, $data);
 

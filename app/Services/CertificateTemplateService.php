@@ -23,13 +23,16 @@ class CertificateTemplateService
         if (isset($data['background_image']) && $data['background_image'] instanceof UploadedFile) {
             $data['background_image'] = $this->imageService->store(
                 $data['background_image'],
-                'images/certificates',
+                'certificates',
                 'certificate'
             );
         }
 
         $data['layout'] = $this->normalizeLayout($data['layout'] ?? []);
-        $data['is_active'] = (bool) ($data['is_active'] ?? true);
+        // Convert string '0'/'1' or boolean to proper boolean (default: true)
+        $data['is_active'] = isset($data['is_active'])
+            ? (filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? (bool) $data['is_active'])
+            : true;
 
         return CertificateTemplate::create([
             'name' => $data['name'],
@@ -47,7 +50,7 @@ class CertificateTemplateService
 
             $data['background_image'] = $this->imageService->store(
                 $data['background_image'],
-                'images/certificates',
+                'certificates',
                 'certificate'
             );
         } else {
@@ -59,7 +62,8 @@ class CertificateTemplateService
         }
 
         if (isset($data['is_active'])) {
-            $data['is_active'] = (bool) $data['is_active'];
+            // Convert string '0'/'1' or boolean to proper boolean
+            $data['is_active'] = filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? (bool) $data['is_active'];
         }
 
         $template->update($data);

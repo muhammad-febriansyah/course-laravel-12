@@ -25,6 +25,7 @@ interface CertificateTemplate {
     name: string;
     description: string | null;
     background_image: string | null;
+    background_image_url: string | null;
     layout: LayoutField[];
     is_active: boolean;
     created_at: string;
@@ -141,17 +142,17 @@ export default function CertificatesShow({ certificate }: Props) {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {certificate.background_image ? (
+                                {certificate.background_image_url ? (
                                     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-muted-foreground/30 bg-muted">
                                         {previewType === 'pdf' ? (
                                             <iframe
-                                                src={certificate.background_image}
+                                                src={certificate.background_image_url}
                                                 title="Template background"
                                                 className="h-full w-full"
                                             />
                                         ) : (
                                             <img
-                                                src={certificate.background_image}
+                                                src={certificate.background_image_url}
                                                 alt="Template background"
                                                 className="h-full w-full object-contain"
                                             />

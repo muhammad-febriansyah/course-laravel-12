@@ -34,6 +34,7 @@ interface CertificateTemplate {
     name: string;
     description: string | null;
     background_image: string | null;
+    background_image_url: string | null;
     layout: LayoutField[];
     is_active: boolean;
 }
@@ -57,7 +58,7 @@ const isPdfFile = (file: File | null): boolean => {
 };
 
 export default function CertificatesEdit({ certificate }: Props) {
-    const [preview, setPreview] = useState<string | null>(certificate.background_image);
+    const [preview, setPreview] = useState<string | null>(certificate.background_image_url);
     const [previewType, setPreviewType] = useState<'image' | 'pdf' | null>(
         isPdfPath(certificate.background_image) ? 'pdf' : certificate.background_image ? 'image' : null
     );
@@ -84,12 +85,19 @@ export default function CertificatesEdit({ certificate }: Props) {
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        form.put(`/admin/certificates/${certificate.id}`, {
+        form.transform((data) => ({
+            ...data,
+            _method: 'PUT',
+        }));
+
+        form.post(`/admin/certificates/${certificate.id}`, {
             forceFormData: true,
+            preserveScroll: true,
             onSuccess: () => {
                 toast.success('Template sertifikat berhasil diperbarui!');
             },
-            onError: () => {
+            onError: (errors) => {
+                console.error('Update errors:', errors);
                 toast.error('Gagal memperbarui template sertifikat.');
             },
         });
@@ -226,7 +234,7 @@ export default function CertificatesEdit({ certificate }: Props) {
                                             setPreview(url);
                                             setPreviewType(isPdfFile(file) ? 'pdf' : 'image');
                                         } else {
-                                            setPreview(certificate.background_image);
+                                            setPreview(certificate.background_image_url);
                                             setPreviewType(
                                                 isPdfPath(certificate.background_image)
                                                     ? 'pdf'
